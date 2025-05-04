@@ -1,0 +1,28 @@
+export default function DashBoard() {
+  return (
+    <>
+      <div className="grid grid-cols-4 gap-4 md:gap-6 ">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+          <div className="col-span-12 space-y-6 xl:col-span-7">
+            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+          <div className="col-span-12 space-y-6 xl:col-span-7">
+            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+          <div className="col-span-12 space-y-6 xl:col-span-7">
+            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+          <div className="col-span-12 space-y-6 xl:col-span-7">
+            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
