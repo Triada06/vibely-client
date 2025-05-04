@@ -5,7 +5,7 @@ import Footer from "./Footer";
 
 export default function AppLayout() {
   return (
-    <div className="dark:bg-[#893168]">
+    <div className="h-dvh bg-[#EAF2EF] dark:bg-[#0D090A]">
       <Header />
       <Sidebar/>
 
