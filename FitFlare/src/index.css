@@ -9,6 +9,10 @@
 @tailwind utilities;
 
 
+.prevent-select {
+  user-select: none; /* Standard syntax */
+}
+
 :root {
   --bg-light: #F5F7FA;
   --text-light: #2E2E2E;
