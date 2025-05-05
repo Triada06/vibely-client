@@ -9,6 +9,18 @@
 @tailwind utilities;
 
 
+:root {
+  --bg-light: #F5F7FA;
+  --text-light: #2E2E2E;
+  --primary-light: #4B3F72;
+}
+
+[data-theme='dark'] {
+  --bg-light: #1C1C1E;
+  --text-light: #EAEAEA;
+  --primary-light: #B794F4;
+}
+
 
 @theme {
 
