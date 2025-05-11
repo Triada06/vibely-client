@@ -1,15 +1,20 @@
 import { Link, NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { GridIcon, UserCircleIcon, MoreDotIcon } from "../admin/icons";
+import { MoreDotIcon } from "../admin/icons";
 import { useEffect, useRef, useState } from "react";
 import {
   faSun,
   faMoon,
   faGear,
   faRightFromBracket,
-  faHouse,
+  faHouseChimney,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faCircleUser,
+  faCompass,
+  faSquarePlus,
+} from "@fortawesome/free-regular-svg-icons";
 
 export default function Sidebar() {
   const [visible, setVisible] = useState(false);
@@ -47,7 +52,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className=" hidden md:flex md:w-72 md:flex-col bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)] rounded-xl fixed h-full">
+      <aside className=" hidden md:flex md:w-72 md:flex-col bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)] rounded-r-2xl fixed h-full">
         <div className="icon size-10 flex justify-start items-center w-10/12 m-4 ">
           <Link
             to={"/"}
@@ -66,7 +71,7 @@ export default function Sidebar() {
 
         <nav className="flex-grow prevent-select ">
           <ul className="flex flex-col justify-start w-full">
-            <li className="m-4 h-2/3">
+            <li className="m-2">
               <NavLink
                 to="/"
                 className={({ isActive, isPending }) =>
@@ -78,14 +83,52 @@ export default function Sidebar() {
                 }
               >
                 <FontAwesomeIcon
-                  icon={faHouse}
-                  className="ml-2 mr-2 "
+                  icon={faHouseChimney}
+                  className="mr-2 ml-2"
                   size="lg"
                 />
                 Home
               </NavLink>
             </li>
-            <li className="m-4">
+            <li className="m-2">
+              <NavLink
+                to="/explore"
+                className={({ isActive, isPending }) =>
+                  isPending
+                    ? "pending "
+                    : isActive
+                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F]  flex text-start h-10 items-center text-xl"
+                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
+                }
+              >
+                <FontAwesomeIcon
+                  icon={faCompass}
+                  className="mr-2 ml-2"
+                  size="lg"
+                />
+                Explore
+              </NavLink>
+            </li>
+            <li className="m-2">
+              <NavLink
+                to="/upload"
+                className={({ isActive, isPending }) =>
+                  isPending
+                    ? "pending "
+                    : isActive
+                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F]  flex text-start h-10 items-center text-xl"
+                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
+                }
+              >
+                <FontAwesomeIcon
+                  icon={faSquarePlus}
+                  className="mr-2 ml-2"
+                  size="lg"
+                />
+                Create
+              </NavLink>
+            </li>
+            <li className="m-2">
               <NavLink
                 to="/profile"
                 className={({ isActive, isPending }) =>
@@ -96,7 +139,11 @@ export default function Sidebar() {
                     : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
                 }
               >
-                <UserCircleIcon className="ml-2 mr-2 size-8" />
+                <FontAwesomeIcon
+                  icon={faCircleUser}
+                  className="mr-2 ml-2"
+                  size="lg"
+                />
                 Profile
               </NavLink>
             </li>
@@ -120,7 +167,7 @@ export default function Sidebar() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="absolute left-0 bottom-full  mb-2 z-50 rounded-xl w-full shadow-xl dark:shadow-[0_4px_20px_rgba(255,255,255,0.1)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] bg-white dark:bg-[#1C1C1E] text-[#2E2E2E] dark:text-[#EAEAEA]"
+                className="absolute left-0 bottom-full ml-2 mb-2 z-50 rounded-xl w-[110%]  dark:shadow-[0_4px_20px_rgba(255,255,255,0.1)] shadow-[0_4px_20px_rgba(0,0,0,0.1)] bg-white dark:bg-[#1C1C1E] text-[#2E2E2E] dark:text-[#EAEAEA]"
               >
                 <ul className="m-4">
                   <li>
