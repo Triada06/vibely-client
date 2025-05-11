@@ -1,5 +1,5 @@
 import HomePage from "../pages/HomePage";
-import BadRequestPage from "../pages/BadRequestPage";
+import NotFoundPage from "../pages/NotFound";
 import AppLayout from "../Layouts/AppLayout";
 import ProfilePage from "../pages/ProfilePage";
 export const AppRoutes = {
@@ -8,6 +8,7 @@ export const AppRoutes = {
   children: [
     { index: true, element: <HomePage /> },
     { path: "/profile", element: <ProfilePage /> },
+    { path: "*", element: <NotFoundPage /> }
   ],
-  errorElement: <BadRequestPage />,
+  errorElement: <NotFoundPage />,
 };

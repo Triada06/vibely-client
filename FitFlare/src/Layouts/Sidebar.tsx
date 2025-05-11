@@ -7,14 +7,30 @@ import {
   faMoon,
   faGear,
   faRightFromBracket,
+  faHouse,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export default function Sidebar() {
   const [visible, setVisible] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
-
   const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("theme");
@@ -31,13 +47,13 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className=" hidden md:flex md:w-82 md:flex-col bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)] rounded-xl fixed h-full">
+      <aside className=" hidden md:flex md:w-72 md:flex-col bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)] rounded-xl fixed h-full">
         <div className="icon size-10 flex justify-start items-center w-10/12 m-4 ">
           <Link
             to={"/"}
             className="size-10 flex justify-start items-center w-10/12"
           >
-            <img className="size-14" src="public/icon.svg" alt="logo" />
+            <img className="size-14" src="./icon.svg" alt="logo" />
             <span className="prevent-select text-[#2E2E2E] dark:text-[#EAEAEA] text-2xl">
               Fitflare
             </span>
@@ -61,7 +77,11 @@ export default function Sidebar() {
                     : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
                 }
               >
-                <GridIcon className="ml-2 mr-2" />
+                <FontAwesomeIcon
+                  icon={faHouse}
+                  className="ml-2 mr-2 "
+                  size="lg"
+                />
                 Home
               </NavLink>
             </li>
@@ -76,7 +96,7 @@ export default function Sidebar() {
                     : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
                 }
               >
-                <UserCircleIcon className="ml-2 mr-2" />
+                <UserCircleIcon className="ml-2 mr-2 size-8" />
                 Profile
               </NavLink>
             </li>
@@ -89,7 +109,7 @@ export default function Sidebar() {
             onClick={() => setVisible(!visible)}
             className="w-full hover:cursor-pointer dark:text-[#EAEAEA] h-10 flex items-center justify-start dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] text-[#2E2E2E] transition-all hover:rounded-xl duration-300 ease-in-out hover:bg-[#4B3F72] hover:text-[#EAF2EF]"
           >
-            <MoreDotIcon className="text-2xl mr-2" />
+            <MoreDotIcon className="text-2xl mr-2 size-7" />
             <h6 className="text-xl">More</h6>
           </div>
 
@@ -113,7 +133,7 @@ export default function Sidebar() {
                         className="mr-2"
                         icon={theme === "dark" ? faSun : faMoon}
                       />
-                      Toggle Theme
+                      Switch appearance
                     </button>
                   </li>
                   <li>

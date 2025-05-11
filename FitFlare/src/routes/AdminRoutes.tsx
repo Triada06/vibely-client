@@ -1,7 +1,7 @@
 import AdminLayout from "../admin/layout/AdminLayout";
 import AppUsers from "../admin/pages/AppUsers";
 import DashBoard from "../admin/pages/DashBoard";
-import BadRequestPage from "../pages/BadRequestPage";
+import BadRequestPage from "../pages/NotFound";
 
 export const AdminRoutes = {
   path: "/admin",
@@ -9,7 +9,7 @@ export const AdminRoutes = {
   children: [
     { index: true, element: <DashBoard /> },
     {
-      path: "/admin/appusers",
+      path: "/admin/appusers",  
       element: <AppUsers />,
     },
   ],

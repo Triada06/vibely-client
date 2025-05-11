@@ -10,7 +10,7 @@
 
 
 .prevent-select {
-  user-select: none; /* Standard syntax */
+  user-select: none; 
 }
 
 :root {
