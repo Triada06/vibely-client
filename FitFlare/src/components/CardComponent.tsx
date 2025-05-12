@@ -1,5 +1,11 @@
 import React from "react";
 import VideoPlayer from "./VideoPlayer";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faComment,
+  faHeart,
+  faShareFromSquare,
+} from "@fortawesome/free-regular-svg-icons";
 
 type PostType = "image" | "video";
 
@@ -10,6 +16,9 @@ interface PostCardProps {
   mediaType: PostType;
   mediaUrl: string;
   description: string;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -19,6 +28,9 @@ const PostCard: React.FC<PostCardProps> = ({
   mediaType,
   mediaUrl,
   description,
+  likeCount,
+  commentCount,
+  shareCount,
 }) => {
   return (
     <div className=" bg-[#F5F7FA]   dark:bg-[#2A2A2D] rounded-2xl shadow-md overflow-hidden w-full max-w-xl mx-auto mb-6">
@@ -36,11 +48,7 @@ const PostCard: React.FC<PostCardProps> = ({
         {mediaType === "image" ? (
           <img src={mediaUrl} alt="post" className="w-full object-cover" />
         ) : (
-          <VideoPlayer
-            src={
-              mediaUrl
-            }
-          ></VideoPlayer>
+          <VideoPlayer src={mediaUrl}></VideoPlayer>
         )}
       </div>
 
@@ -49,9 +57,36 @@ const PostCard: React.FC<PostCardProps> = ({
       </div>
 
       <div className="px-4 pb-4 flex gap-6 text-zinc-500 dark:text-zinc-400 text-sm">
-        <button className="hover:text-pink-500 transition">❤️ Like</button>
-        <button className="hover:text-blue-500 transition">💬 Comment</button>
-        <button className="hover:text-green-500 transition">🔁 Share</button>
+        <div className="flex items-center justify-between">
+          <button className="hover:text-[#2E2E2E] dark:hover:text-[#EAEAEA] transition">
+            <FontAwesomeIcon icon={faHeart} size="xl" />
+          </button>
+          {likeCount != 0 ? (
+            <span className="text-lg ml-2">{likeCount}</span>
+          ) : (
+            " "
+          )}
+        </div>
+        <div className="flex items-center justify-between">
+          <button className="hover:text-[#2E2E2E] dark:hover:text-[#EAEAEA] transition">
+            <FontAwesomeIcon icon={faComment} size="xl" />
+          </button>
+          {commentCount != 0 ? (
+            <span className="text-lg ml-2">{commentCount}</span>
+          ) : (
+            " "
+          )}
+        </div>
+        <div className="flex items-center justify-between transition">
+          <button className=" hover:text-[#2E2E2E] dark:hover:text-[#EAEAEA] transition">
+            <FontAwesomeIcon icon={faShareFromSquare} size="xl" />
+          </button>
+          {shareCount != 0 ? (
+            <span className="text-lg ml-2">{shareCount}</span>
+          ) : (
+            " "
+          )}
+        </div>
       </div>
     </div>
   );

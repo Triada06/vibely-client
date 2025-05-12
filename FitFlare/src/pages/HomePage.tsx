@@ -15,6 +15,9 @@ export default function HomePage() {
             "https://fitcheckstorage.blob.core.windows.net/fitflare/13071904_1280_720_30fps.mp4?sv=2025-05-05&se=2025-05-12T09%3A11%3A46Z&sr=b&sp=r&sig=R%2B%2BiwBep%2Br%2FtWnvAKBVXO0vTlQDJJ7XEtbDfFsAdQAM%3D"
           }
           description={"yo thats a test"}
+          likeCount={0}
+          commentCount={0}
+          shareCount={0}
         ></CardComponent>
       </div>
     </>
