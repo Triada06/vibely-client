@@ -20,7 +20,7 @@ export const useUserStore = create<UserStore>((set) => ({
   loading: false,
 
   fetchUsers: async () => {
-    const res = await fetch(`https://localhost:7014/api/appuser?page=1`); // Replace with your endpoint
+    const res = await fetch(`https://localhost:7014/api/appuser?page=1`);
     const data = await res.json();
     set({ users: data });
   },

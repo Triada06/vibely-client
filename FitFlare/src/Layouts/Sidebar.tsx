@@ -58,7 +58,7 @@ export default function Sidebar() {
             to={"/"}
             className="size-10 flex justify-start items-center w-10/12"
           >
-            <img className="size-14" src="./icon.svg" alt="logo" />
+            <img className="size-14" src="./icon.svg" alt="logo" draggable="false" />
             <span className="prevent-select text-[#2E2E2E] dark:text-[#EAEAEA] text-2xl">
               Fitflare
             </span>
