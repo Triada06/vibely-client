@@ -19,7 +19,7 @@ export default function BasicTableOne() {
   const { users, fetchUsers } = useUserStore();
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(1, "nizami", "asc");
   }, []);
 
   interface Order {

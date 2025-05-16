@@ -10,17 +10,34 @@ interface User {
   posts: number;
 }
 
+interface FetchParams {
+  page?: number;
+  search?: string;
+  sortBy?: string;
+}
+
 interface UserStore {
   users: User[];
-  fetchUsers: () => Promise<void>;
+  fetchUsers: (page :number, search : string, sortBy : string) => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>((set) => ({
   users: [],
-  loading: false,
+  fetchUsers: async ({ page = 1, search = "", sortBy = "" }: FetchParams = {}) => {
+    const token = localStorage.getItem("token"); 
 
-  fetchUsers: async () => {
-    const res = await fetch(`https://localhost:7014/api/appuser?page=1`);
+    const query = new URLSearchParams({
+      page: page.toString(),
+      search,
+      sortBy,
+    });
+
+    const res = await fetch(`https://localhost:7014/api/appuser?${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     const data = await res.json();
     set({ users: data });
   },
