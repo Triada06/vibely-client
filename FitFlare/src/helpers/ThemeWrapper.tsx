@@ -1,14 +1,9 @@
-// ThemeWrapper.tsx
-import { useLocation, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useLocation, useRoutes } from "react-router-dom";
 import { ThemeProvider as StyledThemeProvider } from "styled-components";
 import { appTheme } from "../constants/themes";
-import { AppRoutes } from "../routes/AppRoutes";
-import { AdminRoutes } from "../routes/AdminRoutes";
-import { convertRouteObjectToJSX } from "../helpers/convertToRoutes";
+import { GeneralRoutes } from "../routes/GeneralRoutes";
 import { ThemeProvider as AdminThemeProvider } from "../admin/context/ThemeContext";
-import LoginPage from "../pages/AuthPage";
-import RedirectIfAuth from "../guards/RedirectIfAuth";
-import { useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
 
 export const ThemeWrapper = () => {
@@ -19,25 +14,11 @@ export const ThemeWrapper = () => {
     useAuthStore.getState().initAuth();
   }, []);
 
-  // if it's /login, show login page raw
-  if (location.pathname === "/login") {
-    return (
-      <RedirectIfAuth>
-        <LoginPage />
-      </RedirectIfAuth>
-    );
-  }
-
-  const adminRoutes = convertRouteObjectToJSX(AdminRoutes);
-  const appRoutes = convertRouteObjectToJSX(AppRoutes);
+  const routing = useRoutes(GeneralRoutes);
 
   return isAdmin ? (
-    <AdminThemeProvider>
-      <Routes>{adminRoutes}</Routes>
-    </AdminThemeProvider>
+    <AdminThemeProvider>{routing}</AdminThemeProvider>
   ) : (
-    <StyledThemeProvider theme={appTheme}>
-      <Routes>{appRoutes}</Routes>
-    </StyledThemeProvider>
+    <StyledThemeProvider theme={appTheme}>{routing}</StyledThemeProvider>
   );
 };

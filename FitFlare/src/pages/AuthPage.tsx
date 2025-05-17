@@ -20,7 +20,7 @@ export default function Authentication() {
       });
 
       if (!res.ok) throw new Error(await res.text());
-      
+
       const data = await res.text();
       useAuthStore.getState().setToken(data);
       console.log(data);
@@ -31,12 +31,8 @@ export default function Authentication() {
     }
   };
 
-  console.log(passWord);
-  console.log(emailOrUserName);
-  
-  
   const backgroundImage = useMotionTemplate`radial-gradient(100% 100% at 50% 0%, 
-    var(--gradient-start) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%)`;
+  var(--gradient-start) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%`;
 
   return (
     <motion.section

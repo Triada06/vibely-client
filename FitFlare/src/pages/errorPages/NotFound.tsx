@@ -1,4 +1,3 @@
-import "../App.css";
 
 export default function NotFoundPage() {
   return (

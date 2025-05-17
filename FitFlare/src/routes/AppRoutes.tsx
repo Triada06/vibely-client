@@ -3,7 +3,6 @@ import AppLayout from "../Layouts/AppLayout";
 import RequireAuth from "../guards/ReqiureAuth";
 import HomePage from "../pages/HomePage";
 import ProfilePage from "../pages/ProfilePage";
-import NotFound from "../pages/NotFound";
 
 export const AppRoutes = {
   path: "/",
@@ -15,6 +14,5 @@ export const AppRoutes = {
   children: [
     { index: true, element: <HomePage /> },
     { path: "profile", element: <ProfilePage /> },
-    { path: "*", element: <NotFound /> },
   ],
 };
