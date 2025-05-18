@@ -17,14 +17,14 @@ export default function RequireAuth({
     checkAuth();
   }, []);
 
-  if (isLoading) return null; 
+  if (isLoading) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (adminOnly && role !== "Admin") {
-    return <ForbiddenPage/>
+  if ((adminOnly && role !== "Admin") && role !== "Owner") {
+    return <ForbiddenPage />;
   }
 
   return <>{children}</>;

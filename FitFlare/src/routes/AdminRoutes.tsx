@@ -4,7 +4,7 @@ import DashBoard from "../admin/pages/DashBoard";
 import RequireAuth from "../guards/ReqiureAuth";
 
 export const AdminRoutes = {
-  path: "/",
+  path: "/admin",
   element: (
     <RequireAuth adminOnly={true}>
       <AdminLayout />
@@ -12,9 +12,9 @@ export const AdminRoutes = {
   ),
 
   children: [
-    { path: "/admin", index: true, element: <DashBoard /> },
+    { index: true, element: <DashBoard /> },
     {
-      path: "/admin/appusers",
+      path: "appusers",
       element: <AppUsers />,
     },
   ],
