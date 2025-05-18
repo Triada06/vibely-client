@@ -16,6 +16,10 @@ import {
   faSquarePlus,
 } from "@fortawesome/free-regular-svg-icons";
 
+
+import { useAuthStore } from "../store/authStore";
+
+
 export default function Sidebar() {
   const [visible, setVisible] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -50,6 +54,10 @@ export default function Sidebar() {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
+  const handleLogOut = () =>{
+    useAuthStore.getState().logout();
+  }
+
   return (
     <>
       <aside className=" hidden md:flex md:w-72 md:flex-col bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)] rounded-r-2xl fixed h-full">
@@ -58,7 +66,12 @@ export default function Sidebar() {
             to={"/"}
             className="size-10 flex justify-start items-center w-10/12"
           >
-            <img className="size-14" src="./icon.svg" alt="logo" draggable="false" />
+            <img
+              className="size-14"
+              src="./icon.svg"
+              alt="logo"
+              draggable="false"
+            />
             <span className="prevent-select text-[#2E2E2E] dark:text-[#EAEAEA] text-2xl">
               Fitflare
             </span>
@@ -111,7 +124,7 @@ export default function Sidebar() {
             </li>
             <li className="m-2">
               <NavLink
-                to="/upload"
+                to="/uploadpost"
                 className={({ isActive, isPending }) =>
                   isPending
                     ? "pending "
@@ -201,7 +214,7 @@ export default function Sidebar() {
                   </li>
                   <li className="border-t mt-2 border-[#D3D3D3] text-xl text-[#2E2E2E] dark:border-[#3C3C3F] dark:text-[#EAEAEA]">
                     <button
-                      onClick={toggleTheme}
+                      onClick={handleLogOut}
                       className="w-full flex items-center px-4 py-2 text-lg transition-all duration-300 rounded-xl
               hover:bg-[#4B3F72] hover:text-[#EAF2EF] dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D]"
                     >

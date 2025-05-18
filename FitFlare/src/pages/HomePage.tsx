@@ -49,11 +49,11 @@ export default function HomePage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <section
         id="statuses"
         className="relative overflow-hidden md:ml-72 pt-3 mb-10"
-        draggable = "false"
+        draggable="false"
       >
         {canScrollLeft && (
           <button
@@ -91,7 +91,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <div className="md:ml-72 md:p-4 text-[#2E2E2E] dark:text-[#EAEAEA]">
+      <div className="md:ml-72 md:p-4 text-[var(--text)] flex-1">
         <CardComponent
           username={"nizami"}
           avatarUrl={
@@ -108,6 +108,6 @@ export default function HomePage() {
           shareCount={0}
         ></CardComponent>
       </div>
-    </>
+    </div>
   );
 }

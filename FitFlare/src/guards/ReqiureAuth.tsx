@@ -23,7 +23,7 @@ export default function RequireAuth({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if ((adminOnly && role !== "Admin") && role !== "Owner") {
+  if (adminOnly && role !== "Admin" && role !== "Owner") {
     return <ForbiddenPage />;
   }
 
