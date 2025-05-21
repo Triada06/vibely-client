@@ -1,38 +1,61 @@
 import { create } from "zustand";
+import { jwtDecode } from "jwt-decode";
 
 interface Post {
-  id: string;
+  id: number;
   mediaUri: string;
-  mediaType: string;
+  mediaType: "image" | "video";
+  likeCount: number;
+  commentCount: number;
   description: string;
-  commentsCount: number;
-  likesCount: number;
-  shareCount: number;
-};
+}
 
 interface Profile {
   id: string;
+  userName: string;
   fullName: string;
+  postsCount: number;
   description: string;
-  profilePicUri: string;
+  profilePictureUri: string;
   followersCount: number;
   followingCount: number;
   posts: Post[];
 }
 
 interface ProfileStore {
-  profiles: Profile[];
-  fetchPosts: () => Promise<void>;
+  profile: Profile | null;
+  fetchUser: () => Promise<void>;
 }
 
-export const usePostStore = create<ProfileStore>((set) => ({
-  profiles: [],
-  loading: false,
+function getUserIdFromToken(): string | null {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
 
-  fetchPosts: async () => {
-    const res = await fetch(`https://localhost:7014/api/appuser?page=1`); // Replace with your endpoint
+  const decoded: any = jwtDecode(token);
+  return decoded.sub;
+}
+
+export const useProfileStore = create<ProfileStore>((set) => ({
+  profile : null,
+
+  fetchUser: async () => {
+    const userId = getUserIdFromToken();
+    if (!userId) return;
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`https://localhost:7014/api/appuser/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     const data = await res.json();
-    set({ profiles: data });
+    console.log(data);
+    console.log(`profile picture uri - ${data.profilePictureUri} `);
+
+
+    set({ profile: data });
+
   },
 }));
-

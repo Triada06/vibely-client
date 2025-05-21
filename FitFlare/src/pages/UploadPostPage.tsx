@@ -7,6 +7,7 @@ import {
   faHashtag,
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { getUserIdFromToken } from "../helpers/getUserIdeFromToken";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
 const MAX_DESCRIPTION_LENGTH = 150;
@@ -113,15 +114,38 @@ export default function UploadpostPage() {
     setHashtags(hashtags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const postData = {
-      file: selectedFile,
-      description: description,
-      hashtags: hashtags,
-    };
-    console.log("Post Data:", postData);
-  };
+  const handleSubmit = async (event: React.FormEvent) => {
+  event.preventDefault();
+
+  const token = localStorage.getItem("token");
+  const userId = getUserIdFromToken(); 
+  if (!token || !userId || !selectedFile) {
+    setError("Missing required data");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("userId", userId);
+  formData.append("description", description);
+  formData.append("media", selectedFile); 
+
+  const res = await fetch("https://localhost:7014/api/post", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (res.ok) {
+    console.log("Upload success ✅");
+    // reset states or navigate, up to you
+  } else {
+    console.error("Upload failed ❌", await res.text());
+    setError("Upload failed. Try again.");
+  }
+};
+
 
   return (
     <div className="flex-1 md:ml-72 text-[#2E2E2E] dark:text-[#EAEAEA] min-h-screen pb-16 md:pb-0">
@@ -129,9 +153,7 @@ export default function UploadpostPage() {
         <form id="upload-form" onSubmit={handleSubmit} className="space-y-6">
           <div
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
-              ${
-                selectedFile ? "border-[#B794F4]" : "border-gray-700"
-              }`}
+              ${selectedFile ? "border-[#B794F4]" : "border-gray-700"}`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
           >

@@ -1,49 +1,38 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import {
   faBookmark,
   faClone,
   faComment,
   faHeart,
+  faPlay,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
-interface Post {
-  id: number;
-  imageUrl: string;
-  likes: number;
-  comments: number;
-}
+import { useProfileStore } from "../store/profileStore";
+import PostModal from "../components/PostModal";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"posts" | "saved">("posts");
+  const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(
+    null
+  );
 
-  const posts: Post[] = [
-    {
-      id: 1,
-      imageUrl: "/src/assets/imgs/Orenstein.jpg",
-      likes: 100,
-      comments: 20,
-    },
-    {
-      id: 2,
-      imageUrl: "/src/assets/imgs/Orenstein.jpg",
-      likes: 150,
-      comments: 30,
-    },
-    {
-      id: 3,
-      imageUrl: "/src/assets/imgs/Orenstein.jpg",
-      likes: 200,
-      comments: 40,
-    },
-    {
-      id: 4,
-      imageUrl: "/src/assets/imgs/Orenstein.jpg",
-      likes: 200,
-      comments: 40,
-    },
-  ];
+  const { profile, fetchUser } = useProfileStore();
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  const handlePostClick = (index: number) => {
+    setSelectedPostIndex(index);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPostIndex(null);
+  };
+
+  console.log(profile?.postsCount);
 
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8 h-full min-h-screen">
@@ -51,8 +40,8 @@ export default function ProfilePage() {
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8">
           <div className="md:flex-shrink-0">
             <img
-              className="rounded-full w-32 h-32 md:w-40 md:h-40 object-cover "
-              src="/src/assets/imgs/Orenstein.jpg"
+              className="rounded-full w-32 h-32 md:w-40 md:h-40 object-cover"
+              src={profile?.profilePictureUri}
               alt="profile"
             />
           </div>
@@ -60,7 +49,7 @@ export default function ProfilePage() {
           <div className="flex flex-col gap-6 flex-grow">
             <div className="flex flex-row sm:items-center gap-4">
               <h2 className="text-xl font-normal dark:text-[#EAEAEA]">
-                tri1ada
+                {profile?.userName}
               </h2>
               <div className="flex gap-2">
                 <Link
@@ -74,22 +63,22 @@ export default function ProfilePage() {
 
             <div className="flex gap-8 text-sm">
               <div className="dark:text-[#EAEAEA]">
-                <span className="font-semibold ">{posts.length}</span> posts
+                <span className="font-semibold">{profile?.postsCount}</span>{" "}
+                posts
               </div>
-              <button className="hover:opacity-80 dark:text-[#EAEAEA]">
-                <span className="font-semibold">1,200</span> followers
-              </button>
-              <button className="hover:opacity-80 dark:text-[#EAEAEA]">
-                <span className="font-semibold dark:text-gray">300 </span>
+              <div className="hover:opacity-80 dark:text-[#EAEAEA]">
+                <span className="font-semibold">{profile?.followersCount}</span>{" "}
+                followers
+              </div>
+              <div className="hover:opacity-80 dark:text-[#EAEAEA]">
+                <span className="font-semibold">{profile?.followingCount}</span>{" "}
                 following
-              </button>
+              </div>
             </div>
 
-            <div className="text-sm leading-snug  dark:text-[#EAEAEA]">
-              <p className="font-semibold">
-                Nizami THE GREATEST DEVELOPER EVER
-              </p>
-              <p>Ts nigga goons to lebron</p>
+            <div className="text-sm leading-snug dark:text-[#EAEAEA]">
+              <p className="font-semibold">{profile?.fullName}</p>
+              <p>{profile?.description}</p>
             </div>
           </div>
         </div>
@@ -125,31 +114,39 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {activeTab === "posts" && posts.length > 0 ? (
+        {activeTab === "posts" && profile?.postsCount! > 0 ? (
           <div className="grid grid-cols-3 gap-1 md:gap-6 mt-4 h-full">
-            {posts.map((post) => (
+            {profile?.posts.map((post, index) => (
               <div
                 key={post.id}
                 className="relative aspect-square group cursor-pointer"
+                onClick={() => handlePostClick(index)}
               >
-                <img
-                  src={post.imageUrl}
-                  alt={`Post ${post.id}`}
-                  className="w-full h-full object-cover"
-                />
+                {post.mediaType === "image" ? (
+                  <img
+                    src={post.mediaUri}
+                    alt={`Post ${post.id}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    src={post.mediaUri}
+                    className="w-full h-full object-cover relative"
+                  ></video>
+                )}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <div className="flex gap-8 text-white font-semibold">
                     <div className="flex items-center gap-1">
                       <span>
                         <FontAwesomeIcon icon={faHeart} />
                       </span>{" "}
-                      {post.likes}
+                      {post.likeCount}
                     </div>
                     <div className="flex items-center gap-1">
                       <span>
                         <FontAwesomeIcon icon={faComment} />
                       </span>{" "}
-                      {post.comments}
+                      {post.commentCount}
                     </div>
                   </div>
                 </div>
@@ -181,6 +178,17 @@ export default function ProfilePage() {
               </>
             )}
           </div>
+        )}
+
+        {selectedPostIndex !== null && profile?.posts && (
+          <PostModal
+            profile={profile}
+            posts={profile.posts}
+            initialPostIndex={selectedPostIndex}
+            isOpen={selectedPostIndex !== null}
+            onClose={handleCloseModal}
+            user
+          />
         )}
       </div>
     </section>
