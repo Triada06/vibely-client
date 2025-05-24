@@ -7,7 +7,7 @@ import {
   faSquarePlus,
 } from "@fortawesome/free-regular-svg-icons";
 
-export default function Footer() {
+export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
   return (
     <>
       <footer className="border-t-2  md:hidden fixed w-full bottom-0 bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
@@ -51,7 +51,7 @@ export default function Footer() {
             </li>
             <li className="m-2 sm:m-3 md:m-4">
               <NavLink
-                to="/upload"
+                to="/uploadpost"
                 className={({ isActive, isPending }) =>
                   isPending
                     ? "pending "
@@ -72,17 +72,23 @@ export default function Footer() {
                 to="/profile"
                 className={({ isActive, isPending }) =>
                   isPending
-                    ? "pending "
+                    ? "pending"
                     : isActive
-                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F]  flex text-start h-10 items-center text-xl"
-                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
+                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F] flex text-start h-10 items-center text-xl"
+                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E] flex text-start h-10 items-center text-xl"
                 }
               >
-                <FontAwesomeIcon
-                  icon={faCircleUser}
-                  className="mr-2 ml-2"
-                  size="lg"
-                />
+                {({ isActive }) => (
+                  <>
+                    <img
+                      className={`size-10 rounded-full mr-2 ml-2 transition-all duration-300 ${
+                        isActive ? "border-2 dark:border-[#4DD0E1] border-[#E07A5F]" : ""
+                      }`}
+                      src={profilePicUri ?? "./default-profile-picture.jpg"}
+                      alt="profilePic"
+                    />
+                  </>
+                )}
               </NavLink>
             </li>
           </ul>

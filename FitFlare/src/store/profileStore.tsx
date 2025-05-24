@@ -8,6 +8,8 @@ interface Post {
   likeCount: number;
   commentCount: number;
   description: string;
+  postedWhen: string;
+  hashTags: string[];
 }
 
 interface Profile {

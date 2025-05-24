@@ -134,15 +134,15 @@ export default function ProfilePage() {
                     className="w-full h-full object-cover relative"
                   ></video>
                 )}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute inset-0 dark:bg-[#EAF2EF]/70 bg-[#1C1C1E]/70 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <div className="flex gap-8 text-white font-semibold">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 dark:text-[#2E2E2E] text-[#EAF2EF]">
                       <span>
                         <FontAwesomeIcon icon={faHeart} />
                       </span>{" "}
                       {post.likeCount}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 dark:text-[#2E2E2E] text-[#EAF2EF]">
                       <span>
                         <FontAwesomeIcon icon={faComment} />
                       </span>{" "}

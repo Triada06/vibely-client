@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCloudArrowUp,
@@ -8,8 +8,9 @@ import {
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { getUserIdFromToken } from "../helpers/getUserIdeFromToken";
+import { Navigate, useNavigate } from "react-router-dom";
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB (in bytes)
 const MAX_DESCRIPTION_LENGTH = 150;
 
 export default function UploadpostPage() {
@@ -21,7 +22,9 @@ export default function UploadpostPage() {
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -115,40 +118,58 @@ export default function UploadpostPage() {
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  const token = localStorage.getItem("token");
-  const userId = getUserIdFromToken(); 
-  if (!token || !userId || !selectedFile) {
-    setError("Missing required data");
-    return;
-  }
+    const token = localStorage.getItem("token");
+    const userId = getUserIdFromToken();
+    if (!token || !userId || !selectedFile) {
+      setError("Missing required data");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("userId", userId);
-  formData.append("description", description);
-  formData.append("media", selectedFile); 
+    const formData = new FormData();
+    formData.append("userId", userId);
+    formData.append("description", description);
+    formData.append("media", selectedFile);
+    formData.append("hashtags", hashtags.join(","));
 
-  const res = await fetch("https://localhost:7014/api/post", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
+    const res = await fetch("https://localhost:7014/api/post", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-  if (res.ok) {
-    console.log("Upload success ✅");
-    // reset states or navigate, up to you
-  } else {
-    console.error("Upload failed ❌", await res.text());
-    setError("Upload failed. Try again.");
-  }
-};
-
+    if (res.ok) {
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        navigate("/");
+        console.log(hashtags);
+        
+      }, 1800);
+    } else {
+      setError("Upload failed. Try again.");
+    }
+  };
 
   return (
     <div className="flex-1 md:ml-72 text-[#2E2E2E] dark:text-[#EAEAEA] min-h-screen pb-16 md:pb-0">
+      {/* Success Popout */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30">
+          <div className="bg-white dark:bg-[#232323] rounded-xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3 animate-fade-in">
+            <FontAwesomeIcon
+              icon={faCloudArrowUp}
+              className="text-4xl text-green-500"
+            />
+            <span className="text-lg font-semibold text-green-600 dark:text-green-400">
+              Uploaded successfully!
+            </span>
+          </div>
+        </div>
+      )}
       <div className="max-w-3xl mx-auto p-4 md:p-8">
         <form id="upload-form" onSubmit={handleSubmit} className="space-y-6">
           <div

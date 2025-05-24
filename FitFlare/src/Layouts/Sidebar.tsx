@@ -16,11 +16,9 @@ import {
   faSquarePlus,
 } from "@fortawesome/free-regular-svg-icons";
 
-
 import { useAuthStore } from "../store/authStore";
 
-
-export default function Sidebar() {
+export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
   const [visible, setVisible] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState("light");
@@ -54,9 +52,9 @@ export default function Sidebar() {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
-  const handleLogOut = () =>{
+  const handleLogOut = () => {
     useAuthStore.getState().logout();
-  }
+  };
 
   return (
     <>
@@ -146,18 +144,24 @@ export default function Sidebar() {
                 to="/profile"
                 className={({ isActive, isPending }) =>
                   isPending
-                    ? "pending "
+                    ? "pending"
                     : isActive
-                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F]  flex text-start h-10 items-center text-xl"
-                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
+                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F] flex text-start h-10 items-center text-xl"
+                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E] flex text-start h-10 items-center text-xl"
                 }
               >
-                <FontAwesomeIcon
-                  icon={faCircleUser}
-                  className="mr-2 ml-2"
-                  size="lg"
-                />
-                Profile
+                {({ isActive }) => (
+                  <>
+                    <img
+                      className={`size-8 rounded-full mr-2 ml-2 transition-all duration-300 ${
+                        isActive ? "border-2 dark:border-[#4DD0E1] border-[#E07A5F]" : ""
+                      }`}
+                      src={profilePicUri ?? "./default-profile-picture.jpg"}
+                      alt="profilePic"
+                    />
+                    Profile
+                  </>
+                )}
               </NavLink>
             </li>
           </ul>
