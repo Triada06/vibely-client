@@ -86,9 +86,9 @@ export default function UploadpostPage() {
         return;
       }
 
-      const aiResponse = await res.text(); 
+      const aiResponse = await res.text();
       console.log(aiResponse);
-      
+
       setAiSuggestion(aiResponse);
     } catch (err) {
       setError("AI analysis failed. Please try again.");

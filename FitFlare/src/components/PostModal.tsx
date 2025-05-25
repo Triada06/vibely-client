@@ -42,6 +42,7 @@ interface Post {
   comments: Comment[];
   postedWhen: string;
   hashTags: string[];
+  isLikedByUser : boolean; 
 }
 
 interface PostModalProps {
@@ -67,10 +68,14 @@ export default function PostModal({
   const modalRef = useRef<HTMLDivElement>(null);
 
   const currentPost = posts[currentIndex];
-  console.log(currentPost.postedWhen);
+
+  useEffect(() => {
+    if (currentPost) {
+      setIsLiked(currentPost.isLikedByUser || false);
+    }
+  }, [currentPost]);
 
   const handleBackdropClick = (e: MouseEvent) => {
-    // Check if the click is on the backdrop (not on the modal content)
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
       onClose();
     }
@@ -88,7 +93,78 @@ export default function PostModal({
     setIsShareModalOpen(true);
   };
 
-  // Prevent background scroll when modal is open (optional, for better UX)
+  const handleLike = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    const previousLikeCount = currentPost.likeCount;
+    currentPost.likeCount += 1;
+    setIsLiked(true);
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}/like`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        currentPost.likeCount = previousLikeCount;
+        setIsLiked(false);
+        console.error("Failed to like the post");
+      } else {
+        console.log("Post liked successfully");
+      }
+    } catch (err) {
+      currentPost.likeCount = previousLikeCount;
+      setIsLiked(false);
+      console.error("Error liking the post:", err);
+    }
+  };
+
+  const handleUnlike = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    const previousLikeCount = currentPost.likeCount;
+    currentPost.likeCount -= 1;
+    setIsLiked(false);
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}/unlike`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        currentPost.likeCount = previousLikeCount;
+        setIsLiked(true);
+        console.error("Failed to unlike the post");
+      } else {
+        console.log("Post unliked successfully");
+      }
+    } catch (err) {
+      currentPost.likeCount = previousLikeCount;
+      setIsLiked(true);
+      console.error("Error unliking the post:", err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -100,7 +176,6 @@ export default function PostModal({
     };
   }, [isOpen]);
 
-  // Helper to format "posted when"
   function formatPostedWhen(dateString?: string) {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -150,7 +225,10 @@ export default function PostModal({
             className="md:hidden absolute bottom-4 right-4 dark:bg-[#2E2E2E] bg-white/80 rounded-full p-3 shadow-lg"
             onClick={() => setShowMobileComments(true)}
           >
-            <FontAwesomeIcon icon={faComment} className="text-xl dark:text-[#EAF2EF] text-[#2E2E2E]" />
+            <FontAwesomeIcon
+              icon={faComment}
+              className="text-xl dark:text-[#EAF2EF] text-[#2E2E2E]"
+            />
           </button>
 
           {posts.length > 1 && (
@@ -171,7 +249,6 @@ export default function PostModal({
           )}
         </div>
 
-        {/* Comments/details sidebar: hidden on mobile, visible on md+ */}
         <div className="hidden md:flex w-96 flex-col border-l border-gray-200 dark:bg-[#1C1C1E] max-h-[90vh]">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex gap-3 items-center">
@@ -193,14 +270,10 @@ export default function PostModal({
             </div>
             <div className="mt-2 text-sm text-gray-800 dark:text-gray-200 break-words">
               {currentPost.description}
-              {/* Hashtags display */}
               {currentPost.hashTags && currentPost.hashTags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {currentPost.hashTags.map((tag: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="text-[#B794F4] font-semibold"
-                    >
+                    <span key={idx} className="text-[#B794F4] font-semibold">
                       {tag}
                     </span>
                   ))}
@@ -217,7 +290,7 @@ export default function PostModal({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setIsLiked(!isLiked)}
+                  onClick={isLiked ? handleUnlike : handleLike}
                   className={`hover:opacity-80 ${
                     isLiked ? "text-red-500" : "dark:text-white"
                   }`}
@@ -296,10 +369,7 @@ export default function PostModal({
               {currentPost.hashTags && currentPost.hashTags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {currentPost.hashTags.map((tag: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="text-[#B794F4] font-semibold"
-                    >
+                    <span key={idx} className="text-[#B794F4] font-semibold">
                       {tag}
                     </span>
                   ))}

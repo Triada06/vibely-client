@@ -153,7 +153,7 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                 {({ isActive }) => (
                   <>
                     <img
-                      className={`size-8 rounded-full mr-2 ml-2 transition-all duration-300 ${
+                      className={`size-7 rounded-full mr-2 ml-2 transition-all duration-300 ${
                         isActive ? "border-2 dark:border-[#4DD0E1] border-[#E07A5F]" : ""
                       }`}
                       src={profilePicUri ?? "./default-profile-picture.jpg"}
