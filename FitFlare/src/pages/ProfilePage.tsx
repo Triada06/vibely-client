@@ -32,8 +32,6 @@ export default function ProfilePage() {
     setSelectedPostIndex(null);
   };
 
-  console.log(profile?.postsCount);
-
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8 h-full min-h-screen">
       <div className="flex flex-col h-full">

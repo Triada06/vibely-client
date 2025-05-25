@@ -55,15 +55,46 @@ export default function UploadpostPage() {
   };
 
   const analyzeMediaWithAI = async (file: File) => {
+    const token = localStorage.getItem("token");
+    const userId = getUserIdFromToken();
+    if (!token || !userId || !file) {
+      setError("Missing required data");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("userId", userId);
+    formData.append("description", description);
+    formData.append("status", "Drafted");
+    formData.append("media", file);
+    hashtags.forEach((tag) => formData.append("hashtags", tag));
+
     setIsAnalyzing(true);
-    // TODO: Implement actual AI analysis here
-    // This is a mock response for now
-    setTimeout(() => {
-      setAiSuggestion(
-        "This image would work great with travel and lifestyle hashtags! Consider adding some details about the location or your outfit."
-      );
+
+    try {
+      const res = await fetch("https://localhost:7014/api/post", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        setError("AI analysis failed. Please try again.");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const aiResponse = await res.text(); 
+      console.log(aiResponse);
+      
+      setAiSuggestion(aiResponse);
+    } catch (err) {
+      setError("AI analysis failed. Please try again.");
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -130,8 +161,9 @@ export default function UploadpostPage() {
     const formData = new FormData();
     formData.append("userId", userId);
     formData.append("description", description);
+    formData.append("status", "Publishing");
     formData.append("media", selectedFile);
-    formData.append("hashtags", hashtags.join(","));
+    hashtags.forEach((tag) => formData.append("hashtags", tag));
 
     const res = await fetch("https://localhost:7014/api/post", {
       method: "POST",
@@ -147,7 +179,6 @@ export default function UploadpostPage() {
         setShowSuccess(false);
         navigate("/");
         console.log(hashtags);
-        
       }, 1800);
     } else {
       setError("Upload failed. Try again.");
