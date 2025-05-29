@@ -10,7 +10,6 @@ import {
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
-import { faCommentAlt } from "@fortawesome/free-regular-svg-icons";
 
 interface CommentUser {
   userName: string;
@@ -42,12 +41,25 @@ interface Post {
   comments: Comment[];
   postedWhen: string;
   hashTags: string[];
-  isLikedByUser : boolean; 
+  isLikedByUser: boolean;
+}
+interface SavedPost {
+  id: number;
+  mediaUri: string;
+  mediaType: "image" | "video";
+  likeCount: number;
+  commentCount: number;
+  description: string;
+  comments: Comment[];
+  postedWhen: string;
+  hashTags: string[];
+  isLikedByUser: boolean;
 }
 
 interface PostModalProps {
   profile: Profile;
   posts: Post[];
+  savedPosts: SavedPost[];
   initialPostIndex: number;
   isOpen: boolean;
   onClose: () => void;
@@ -59,6 +71,8 @@ export default function PostModal({
   isOpen,
   profile,
   onClose,
+  savedPosts, // Added savedPosts prop
+  setSavedPosts, // Added setSavedPosts prop to update saved posts
 }: PostModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialPostIndex);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -72,8 +86,9 @@ export default function PostModal({
   useEffect(() => {
     if (currentPost) {
       setIsLiked(currentPost.isLikedByUser || false);
+      setIsSaved(savedPosts.some((post) => post.id === currentPost.id)); 
     }
-  }, [currentPost]);
+  }, [currentPost, savedPosts]);
 
   const handleBackdropClick = (e: MouseEvent) => {
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -165,6 +180,66 @@ export default function PostModal({
     }
   };
 
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}/save`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        setIsSaved(true);
+        setSavedPosts([...savedPosts, currentPost]); // Add the post to savedPosts
+        console.log("Post saved successfully");
+      } else {
+        console.error("Failed to save the post");
+      }
+    } catch (err) {
+      console.error("Error saving the post:", err);
+    }
+  };
+
+  const handleUnsave = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}/unsave`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        setIsSaved(false);
+        setSavedPosts(savedPosts.filter((post) => post.id !== currentPost.id)); // Remove the post from savedPosts
+        console.log("Post unsaved successfully");
+      } else {
+        console.error("Failed to unsave the post");
+      }
+    } catch (err) {
+      console.error("Error unsaving the post:", err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -235,13 +310,13 @@ export default function PostModal({
             <>
               <button
                 onClick={handlePrevious}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:opacity-80"
+                className="absolute left-4 top-1/2 -translate-y-1/2 dark:text-white text-black hover:opacity-80"
               >
                 <FontAwesomeIcon icon={faChevronLeft} size="2x" />
               </button>
               <button
                 onClick={handleNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:opacity-80"
+                className="absolute right-4 top-1/2 -translate-y-1/2 dark:text-white text-black hover:opacity-80"
               >
                 <FontAwesomeIcon icon={faChevronRight} size="2x" />
               </button>
@@ -305,7 +380,7 @@ export default function PostModal({
                 </button>
               </div>
               <button
-                onClick={() => setIsSaved(!isSaved)}
+                onClick={isSaved ? handleUnsave : handleSave}
                 className={`hover:opacity-80 ${
                   isSaved ? "text-yellow-500" : "dark:text-white"
                 }`}
@@ -315,13 +390,6 @@ export default function PostModal({
             </div>
             <div className="dark:text-white">
               <p className="font-semibold">{currentPost.likeCount} likes</p>
-            </div>
-            <div className="mt-4">
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                className="w-full p-2 bg-transparent border-none outline-none dark:text-white"
-              />
             </div>
           </div>
         </div>

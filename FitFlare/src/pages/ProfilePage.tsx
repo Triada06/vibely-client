@@ -151,6 +151,45 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
+        ) : activeTab === "saved" && profile?.savedPosts?.length! > 0 ? (
+          <div className="grid grid-cols-3 gap-1 md:gap-6 mt-4 h-full">
+            {profile!.savedPosts.map((post, index) => (
+              <div
+                key={post.id}
+                className="relative aspect-square group cursor-pointer"
+                onClick={() => handlePostClick(index)}
+              >
+                {post.mediaType === "image" ? (
+                  <img
+                    src={post.mediaUri}
+                    alt={`Saved Post ${post.id}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    src={post.mediaUri}
+                    className="w-full h-full object-cover relative"
+                  ></video>
+                )}
+                <div className="absolute inset-0 dark:bg-[#EAF2EF]/70 bg-[#1C1C1E]/70 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="flex gap-8 text-white font-semibold">
+                    <div className="flex items-center gap-1 dark:text-[#2E2E2E] text-[#EAF2EF]">
+                      <span>
+                        <FontAwesomeIcon icon={faHeart} />
+                      </span>{" "}
+                      {post.likeCount}
+                    </div>
+                    <div className="flex items-center gap-1 dark:text-[#2E2E2E] text-[#EAF2EF]">
+                      <span>
+                        <FontAwesomeIcon icon={faComment} />
+                      </span>{" "}
+                      {post.commentCount}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-gray-400">
             {activeTab === "posts" && (
@@ -182,6 +221,7 @@ export default function ProfilePage() {
           <PostModal
             profile={profile}
             posts={profile.posts}
+            savedPosts={profile.savedPosts}
             initialPostIndex={selectedPostIndex}
             isOpen={selectedPostIndex !== null}
             onClose={handleCloseModal}

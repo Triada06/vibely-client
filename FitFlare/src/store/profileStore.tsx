@@ -11,6 +11,16 @@ interface Post {
   postedWhen: string;
   hashTags: string[];
 }
+interface SavedPost {
+  id: number;
+  mediaUri: string;
+  mediaType: "image" | "video";
+  likeCount: number;
+  commentCount: number;
+  description: string;
+  postedWhen: string;
+  hashTags: string[];
+}
 
 interface Profile {
   id: string;
@@ -22,6 +32,7 @@ interface Profile {
   followersCount: number;
   followingCount: number;
   posts: Post[];
+  savedPosts: SavedPost[];
 }
 
 interface ProfileStore {
