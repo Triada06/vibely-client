@@ -8,8 +8,10 @@ import {
   faChevronLeft,
   faChevronRight,
   faXmark,
+  faPenToSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
+import EditPostModal from "./EditPostModal";
 
 interface CommentUser {
   userName: string;
@@ -18,10 +20,13 @@ interface CommentUser {
 }
 
 interface Comment {
+  id: number;
   postedBy: CommentUser;
+  content: string;
   likesCount: number;
   replyCount: number;
-  replies: CommentUser[];
+  replies: Comment[];
+  postedWhen: string;
 }
 
 interface Profile {
@@ -29,6 +34,7 @@ interface Profile {
   userName: string;
   postsCount: number;
   description: string;
+  posts: Post[];
 }
 
 interface Post {
@@ -63,6 +69,9 @@ interface PostModalProps {
   initialPostIndex: number;
   isOpen: boolean;
   onClose: () => void;
+  setSavedPosts: (posts: SavedPost[]) => void;
+  isOwnProfile?: boolean;
+  isSavedPostsTab?: boolean;
 }
 
 export default function PostModal({
@@ -71,22 +80,125 @@ export default function PostModal({
   isOpen,
   profile,
   onClose,
-  savedPosts, // Added savedPosts prop
-  setSavedPosts, // Added setSavedPosts prop to update saved posts
+  savedPosts,
+  setSavedPosts,
+  isOwnProfile = false,
+  isSavedPostsTab = false,
 }: PostModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialPostIndex);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showMobileComments, setShowMobileComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
 
   const currentPost = posts[currentIndex];
 
+  // Mock comments data
+  const mockComments: Comment[] = [
+    {
+      id: 1,
+      postedBy: {
+        userName: "johndoe",
+        profilePictureUri: "https://i.pravatar.cc/150?img=1",
+        userId: "1",
+      },
+      content: "Great workout! 💪",
+      likesCount: 5,
+      replyCount: 2,
+      postedWhen: "2024-03-15T10:30:00Z",
+      replies: [
+        {
+          id: 2,
+          postedBy: {
+            userName: "janedoe",
+            profilePictureUri: "https://i.pravatar.cc/150?img=2",
+            userId: "2",
+          },
+          content: "Thanks! It was intense!",
+          likesCount: 3,
+          replyCount: 0,
+          postedWhen: "2024-03-15T10:35:00Z",
+          replies: [],
+        },
+      ],
+    },
+    {
+      id: 3,
+      postedBy: {
+        userName: "fitnessguru",
+        profilePictureUri: "https://i.pravatar.cc/150?img=3",
+        userId: "3",
+      },
+      content: "What's your routine?",
+      likesCount: 2,
+      replyCount: 0,
+      postedWhen: "2024-03-15T11:00:00Z",
+      replies: [],
+    },
+  ];
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}/comment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: newComment,
+          }),
+        }
+      );
+
+      if (res.ok) {
+        // Add the new comment to the local state
+        const newCommentObj: Comment = {
+          id: Date.now(), // Temporary ID
+          postedBy: {
+            userName: profile.userName,
+            profilePictureUri: profile.profilePictureUri,
+            userId: "current-user-id", // You'll need to get this from your auth system
+          },
+          content: newComment,
+          likesCount: 0,
+          replyCount: 0,
+          postedWhen: new Date().toISOString(),
+          replies: [],
+        };
+
+        // Update the post's comments
+        currentPost.comments = [...(currentPost.comments || []), newCommentObj];
+        currentPost.commentCount += 1;
+
+        // Clear the input
+        setNewComment("");
+        console.log("Comment added successfully");
+      } else {
+        console.error("Failed to add comment");
+      }
+    } catch (err) {
+      console.error("Error adding comment:", err);
+    }
+  };
+
   useEffect(() => {
     if (currentPost) {
       setIsLiked(currentPost.isLikedByUser || false);
-      setIsSaved(savedPosts.some((post) => post.id === currentPost.id)); 
+      setIsSaved(savedPosts.some((post) => post.id === currentPost.id));
     }
   }, [currentPost, savedPosts]);
 
@@ -200,7 +312,7 @@ export default function PostModal({
 
       if (res.ok) {
         setIsSaved(true);
-        setSavedPosts([...savedPosts, currentPost]); // Add the post to savedPosts
+        setSavedPosts([...savedPosts, currentPost]);
         console.log("Post saved successfully");
       } else {
         console.error("Failed to save the post");
@@ -230,13 +342,82 @@ export default function PostModal({
 
       if (res.ok) {
         setIsSaved(false);
-        setSavedPosts(savedPosts.filter((post) => post.id !== currentPost.id)); // Remove the post from savedPosts
+        setSavedPosts(savedPosts.filter((post) => post.id !== currentPost.id));
         console.log("Post unsaved successfully");
       } else {
         console.error("Failed to unsave the post");
       }
     } catch (err) {
       console.error("Error unsaving the post:", err);
+    }
+  };
+
+  const handleEditPost = async (description: string, tags: string[]) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            description,
+            hashTags: tags,
+          }),
+        }
+      );
+
+      if (res.ok) {
+        currentPost.description = description;
+        currentPost.hashTags = tags;
+        console.log("Post updated successfully");
+      } else {
+        console.error("Failed to update the post");
+      }
+    } catch (err) {
+      console.error("Error updating the post:", err);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/post/${currentPost.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        const updatedPosts = posts.filter((post) => post.id !== currentPost.id);
+        if (updatedPosts.length === 0) {
+          onClose();
+        } else {
+          setCurrentIndex(0);
+        }
+        console.log("Post deleted successfully");
+      } else {
+        console.error("Failed to delete the post");
+      }
+    } catch (err) {
+      console.error("Error deleting the post:", err);
     }
   };
 
@@ -264,6 +445,11 @@ export default function PostModal({
     return date.toLocaleDateString();
   }
 
+  const isPostEditable = () => {
+    if (!isOwnProfile || isSavedPostsTab) return false;
+    return profile.posts.some((post) => post.id === currentPost.id);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -275,12 +461,22 @@ export default function PostModal({
         ref={modalRef}
         className="relative w-full max-w-6xl h-[90vh] bg-white/95 dark:bg-[#1C1C1E] rounded-lg overflow-hidden shadow-xl flex flex-col md:flex-row"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white z-10 hover:opacity-80"
-        >
-          <FontAwesomeIcon icon={faXmark} size="lg" />
-        </button>
+        <div className="flex absolute top-4 right-4 gap-2 z-10">
+          {isPostEditable() && (
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="dark:text-white text-black hover:opacity-80"
+            >
+              <FontAwesomeIcon icon={faPenToSquare} size="lg" />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="dark:text-white text-black hover:opacity-80"
+          >
+            <FontAwesomeIcon icon={faXmark} size="lg" />
+          </button>
+        </div>
 
         <div className="flex-1 flex items-center justify-center  min-h-[250px] relative">
           {currentPost.mediaType === "image" ? (
@@ -328,8 +524,8 @@ export default function PostModal({
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex gap-3 items-center">
               <img
-                src={profile.profilePictureUri}
-                alt="User avatar"
+                src={profile.profilePictureUri ?? "/default-profile-picture.jpg"}
+                alt=""
                 className="w-8 h-8 rounded-full object-cover"
               />
               <div className="flex flex-col">
@@ -358,7 +554,72 @@ export default function PostModal({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 min-h-[100px]">
-            {/* Comments go here */}
+            {currentPost.comments && currentPost.comments.length > 0 ? (
+              currentPost.comments.map((comment) => (
+                <div key={comment.id} className="mb-4">
+                  <div className="flex items-start gap-2">
+                    <img
+                      src={comment.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
+                      alt={comment.postedBy.userName}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm dark:text-white">
+                          {comment.postedBy.userName}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatPostedWhen(comment.postedWhen)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+                        {comment.content}
+                      </p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                          Like
+                        </button>
+                        <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                          Reply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {comment.replies && comment.replies.length > 0 && (
+                    <div className="ml-10 mt-2">
+                      {comment.replies.map((reply) => (
+                        <div key={reply.id} className="mb-2">
+                          <div className="flex items-start gap-2">
+                            <img
+                              src={reply.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
+                              alt={reply.postedBy.userName}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-xs dark:text-white">
+                                  {reply.postedBy.userName}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatPostedWhen(reply.postedWhen)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
+                                {reply.content}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-400 text-sm mt-4">
+                No comments yet.
+              </div>
+            )}
           </div>
 
           <div className="p-4 border-t border-gray-200 dark:bg-[#1C1C1E]">
@@ -388,8 +649,33 @@ export default function PostModal({
                 <FontAwesomeIcon icon={faBookmark} size="lg" />
               </button>
             </div>
-            <div className="dark:text-white">
+            <div className="dark:text-white mb-4">
               <p className="font-semibold">{currentPost.likeCount} likes</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md border-none outline-none dark:text-white text-sm"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddComment();
+                  }
+                }}
+              />
+              <button
+                onClick={handleAddComment}
+                disabled={!newComment.trim()}
+                className={`px-4 py-2 rounded-md font-semibold text-sm ${
+                  newComment.trim()
+                    ? "text-blue-500 hover:text-blue-600"
+                    : "text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Post
+              </button>
             </div>
           </div>
         </div>
@@ -409,7 +695,7 @@ export default function PostModal({
             {/* Header */}
             <div className="relative border-b border-gray-200 dark:border-gray-700 p-4 flex items-center">
               <img
-                src={profile.profilePictureUri}
+                src={profile.profilePictureUri ?? "/default-profile-picture.jpg"}
                 alt="User avatar"
                 className="w-8 h-8 rounded-full object-cover mr-3"
               />
@@ -447,24 +733,64 @@ export default function PostModal({
 
             <div className="flex-1 overflow-y-auto px-4 py-2">
               {currentPost.comments && currentPost.comments.length > 0 ? (
-                currentPost.comments.map((comment, idx) => (
-                  <div key={idx} className="mb-3 flex items-start gap-2">
-                    <img
-                      src={comment.postedBy.profilePictureUri}
-                      alt={comment.postedBy.userName}
-                      className="w-7 h-7 rounded-full object-cover"
-                    />
-                    <div>
-                      <span className="font-semibold text-xs dark:text-white">
-                        {comment.postedBy.userName}
-                      </span>
-                      <span className="ml-2 text-xs text-gray-700 dark:text-gray-300">
-                        {comment.likesCount} likes
-                      </span>
-                      <div className="text-xs text-gray-800 dark:text-gray-200">
-                        Comment text here
+                currentPost.comments.map((comment) => (
+                  <div key={comment.id} className="mb-4">
+                    <div className="flex items-start gap-2">
+                      <img
+                        src={comment.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
+                        alt={comment.postedBy.userName}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm dark:text-white">
+                            {comment.postedBy.userName}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatPostedWhen(comment.postedWhen)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+                          {comment.content}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                            Like
+                          </button>
+                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                            Reply
+                          </button>
+                        </div>
                       </div>
                     </div>
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="ml-10 mt-2">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="mb-2">
+                            <div className="flex items-start gap-2">
+                              <img
+                                src={reply.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
+                                alt={reply.postedBy.userName}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-xs dark:text-white">
+                                    {reply.postedBy.userName}
+                                  </span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatPostedWhen(reply.postedWhen)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
+                                  {reply.content}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (
@@ -477,7 +803,7 @@ export default function PostModal({
             <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-[#1C1C1E]">
               <div className="flex items-center gap-4 mb-2">
                 <button
-                  onClick={() => setIsLiked(!isLiked)}
+                  onClick={isLiked ? handleUnlike : handleLike}
                   className={`hover:opacity-80 ${
                     isLiked ? "text-red-500" : "dark:text-white"
                   }`}
@@ -491,22 +817,39 @@ export default function PostModal({
                   <FontAwesomeIcon icon={faPaperPlane} size="lg" />
                 </button>
                 <button
-                  onClick={() => setIsSaved(!isSaved)}
+                  onClick={isSaved ? handleUnsave : handleSave}
                   className={`hover:opacity-80 ${
                     isSaved ? "text-yellow-500" : "dark:text-white"
                   }`}
                 >
                   <FontAwesomeIcon icon={faBookmark} size="lg" />
                 </button>
-                <span className="ml-auto font-semibold text-xs dark:text-white">
-                  {currentPost.likeCount} likes
-                </span>
               </div>
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-md border-none outline-none dark:text-white text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md border-none outline-none dark:text-white text-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddComment();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim()}
+                  className={`px-4 py-2 rounded-md font-semibold text-sm ${
+                    newComment.trim()
+                      ? "text-blue-500 hover:text-blue-600"
+                      : "text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Post
+                </button>
+              </div>
             </div>
           </div>
           <div
@@ -561,6 +904,14 @@ export default function PostModal({
           </div>
         </div>
       )}
+
+      <EditPostModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        post={currentPost}
+        onSave={handleEditPost}
+        onDelete={handleDeletePost}
+      />
     </div>
   );
 }

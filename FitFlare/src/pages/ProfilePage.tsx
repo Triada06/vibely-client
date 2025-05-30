@@ -39,7 +39,7 @@ export default function ProfilePage() {
           <div className="md:flex-shrink-0">
             <img
               className="rounded-full w-32 h-32 md:w-40 md:h-40 object-cover"
-              src={profile?.profilePictureUri}
+              src={profile?.profilePictureUri ?? "/default-profile-picture.jpg"}
               alt="profile"
             />
           </div>
@@ -75,7 +75,9 @@ export default function ProfilePage() {
             </div>
 
             <div className="text-sm leading-snug dark:text-[#EAEAEA]">
-              <p className="font-semibold">{profile?.fullName}</p>
+              <p className="font-semibold">
+                {profile?.fullName ?? profile?.userName}
+              </p>
               <p>{profile?.description}</p>
             </div>
           </div>
@@ -220,12 +222,18 @@ export default function ProfilePage() {
         {selectedPostIndex !== null && profile?.posts && (
           <PostModal
             profile={profile}
-            posts={profile.posts}
+            posts={activeTab === "posts" ? profile.posts : profile.savedPosts}
             savedPosts={profile.savedPosts}
             initialPostIndex={selectedPostIndex}
             isOpen={selectedPostIndex !== null}
             onClose={handleCloseModal}
-            user
+            setSavedPosts={(posts) => {
+              if (profile) {
+                profile.savedPosts = posts;
+              }
+            }}
+            isOwnProfile={true}
+            isSavedPostsTab={activeTab === "saved"}
           />
         )}
       </div>

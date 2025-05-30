@@ -11,7 +11,7 @@ export default function SignUpPage() {
   const [confirmPassWord, setConfirmPassWord] = useState("");
   const [passwordsMatch, setPasswordsMatch] = useState(false);
 
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<string | null>(null);
   const [passWordErrors, setPassWordErrors] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -81,7 +81,7 @@ export default function SignUpPage() {
     var(--gradient-start) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%)`;
 
   const handleSignUp = async () => {
-    setError(undefined);
+    setError(null);
     setLoading(true);
     try {
       const res = await fetch("https://localhost:7014/api/appuser/signup", {
@@ -92,13 +92,16 @@ export default function SignUpPage() {
         body: JSON.stringify({ userName, email, passWord }),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Something went wrong.");
+      }
 
-      const data = await res.text();
-      useAuthStore.getState().setToken(data);
-      console.log(data);
+      const data = await res.json();
+      useAuthStore.getState().setToken(data.token); // Store the token
+      console.log("Token stored:", data.token);
 
-      navigate("/");
+      navigate("/"); // Redirect to the home page
     } catch (err: any) {
       setError(err.message || "Something went wrong. Try again later.");
     } finally {
