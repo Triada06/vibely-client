@@ -370,7 +370,7 @@ export default function PostModal({
           },
           body: JSON.stringify({
             description,
-            hashTags: tags,
+            Tags: tags,
           }),
         }
       );
