@@ -11,7 +11,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faCircleUser,
   faCompass,
   faSquarePlus,
 } from "@fortawesome/free-regular-svg-icons";
@@ -66,7 +65,7 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
           >
             <img
               className="size-14"
-              src="./icon.svg"
+              src="/icon.svg"
               alt="logo"
               draggable="false"
             />
@@ -156,7 +155,7 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                       className={`size-7 rounded-full mr-2 ml-2 transition-all duration-300 ${
                         isActive ? "border-2 dark:border-[#4DD0E1] border-[#E07A5F]" : ""
                       }`}
-                      src={profilePicUri ?? "./default-profile-picture.jpg"}
+                      src={profilePicUri ?? "/default-profile-picture.jpg"}
                       alt="profilePic"
                     />
                     Profile

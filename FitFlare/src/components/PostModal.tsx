@@ -33,7 +33,7 @@ interface Profile {
   profilePictureUri: string;
   userName: string;
   postsCount: number;
-  description: string;
+  bio: string;
   posts: Post[];
 }
 
@@ -484,6 +484,7 @@ export default function PostModal({
               src={currentPost.mediaUri}
               alt={`Post ${currentPost.id}`}
               className="max-h-full max-w-full object-contain"
+              draggable={false}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">

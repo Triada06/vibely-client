@@ -6,7 +6,6 @@ import {
   faClone,
   faComment,
   faHeart,
-  faPlay,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useProfileStore } from "../store/profileStore";
@@ -33,7 +32,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8 h-full min-h-screen">
+    <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8  pb-20 h-full min-h-screen">
       <div className="flex flex-col h-full">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8">
           <div className="md:flex-shrink-0">
@@ -78,7 +77,7 @@ export default function ProfilePage() {
               <p className="font-semibold">
                 {profile?.fullName ?? profile?.userName}
               </p>
-              <p>{profile?.description}</p>
+              <p>{profile?.bio}</p>
             </div>
           </div>
         </div>

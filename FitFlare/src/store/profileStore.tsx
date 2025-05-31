@@ -27,7 +27,7 @@ interface Profile {
   userName: string;
   fullName: string;
   postsCount: number;
-  description: string;
+  bio: string;
   profilePictureUri: string;
   followersCount: number;
   followingCount: number;
