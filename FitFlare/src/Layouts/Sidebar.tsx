@@ -10,10 +10,7 @@ import {
   faHouseChimney,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCompass,
-  faSquarePlus,
-} from "@fortawesome/free-regular-svg-icons";
+import { faCompass, faSquarePlus } from "@fortawesome/free-regular-svg-icons";
 
 import { useAuthStore } from "../store/authStore";
 
@@ -153,7 +150,9 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                   <>
                     <img
                       className={`size-7 rounded-full mr-2 ml-2 transition-all duration-300 ${
-                        isActive ? "border-2 dark:border-[#4DD0E1] border-[#E07A5F]" : ""
+                        isActive
+                          ? "border-2 dark:border-[#4DD0E1] border-[#E07A5F]"
+                          : ""
                       }`}
                       src={profilePicUri ?? "/default-profile-picture.jpg"}
                       alt="profilePic"
@@ -201,15 +200,9 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                   </li>
                   <li>
                     <NavLink
-                      to="/settings"
+                      to="profile/settings"
                       onClick={() => setVisible(false)}
-                      className={({ isActive }) =>
-                        `flex items-center px-4 py-2 text-lg transition-all duration-300 rounded-xl w-full ${
-                          isActive
-                            ? "text-[#E07A5F] bg-[#f0f0f0] dark:bg-[#4B3F72] dark:text-[#4DD0E1]"
-                            : "hover:bg-[#4B3F72] hover:text-[#EAF2EF] dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D]"
-                        }`
-                      }
+                      className=" flex items-center px-4 py-2 text-lg transition-all duration-300 rounded-xl w-full hover:bg-[#4B3F72] hover:text-[#EAF2EF] dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D]"
                     >
                       <FontAwesomeIcon className="mr-2" icon={faGear} />
                       Settings

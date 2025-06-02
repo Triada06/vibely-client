@@ -4,6 +4,7 @@ import RequireAuth from "../guards/ReqiureAuth";
 import HomePage from "../pages/HomePage";
 import ProfileEditPage from "../pages/ProfileEditPage";
 import ProfilePage from "../pages/ProfilePage";
+import SettingsPage from "../pages/SettingsPage";
 import UploadpostPage from "../pages/UploadPostPage";
 
 export const AppRoutes = {
@@ -16,6 +17,7 @@ export const AppRoutes = {
   children: [
     { index: true, element: <HomePage /> },
     { path: "profile", element: <ProfilePage /> },
+    {path : "profile/settings", element: <SettingsPage />},
     { path: "uploadpost", element: <UploadpostPage /> },
     {path: "profile/edit", element: <ProfileEditPage />},
   ],

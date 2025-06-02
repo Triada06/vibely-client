@@ -5,6 +5,7 @@ import {
   faBookmark,
   faClone,
   faComment,
+  faGear,
   faHeart,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -34,6 +35,7 @@ export default function ProfilePage() {
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8  pb-20 h-full min-h-screen">
       <div className="flex flex-col h-full">
+        ``
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8">
           <div className="md:flex-shrink-0">
             <img
@@ -54,6 +56,12 @@ export default function ProfilePage() {
                   className="px-4 py-1.5 dark:text-[#EAEAEA] bg-gray-200 dark:bg-gray-800 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   Edit Profile
+                </Link>
+                <Link
+                  to="settings"
+                  className="px-4 py-1.5 md:hidden dark:text-[#EAEAEA]   text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  <FontAwesomeIcon className="mr-2" size="xl" icon={faGear} />
                 </Link>
               </div>
             </div>
@@ -81,7 +89,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-
         <div className="border-t border-gray-200 dark:border-gray-800 h-full">
           <div className="flex justify-center">
             <button
@@ -112,7 +119,6 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-
         {activeTab === "posts" && profile?.postsCount! > 0 ? (
           <div className="grid grid-cols-3 gap-1 md:gap-6 mt-4 h-full">
             {profile?.posts.map((post, index) => (
@@ -217,7 +223,6 @@ export default function ProfilePage() {
             )}
           </div>
         )}
-
         {selectedPostIndex !== null && profile?.posts && (
           <PostModal
             profile={profile}
