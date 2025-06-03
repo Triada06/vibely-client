@@ -23,6 +23,7 @@ interface SavedPost {
 }
 
 interface Profile {
+  isPrivate: boolean;
   id: string;
   userName: string;
   fullName: string;
