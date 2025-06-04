@@ -50,7 +50,7 @@ function getUserIdFromToken(): string | null {
 }
 
 export const useProfileStore = create<ProfileStore>((set) => ({
-  profile : null,
+  profile: null,
 
   fetchUser: async () => {
     const userId = getUserIdFromToken();
@@ -66,10 +66,7 @@ export const useProfileStore = create<ProfileStore>((set) => ({
 
     const data = await res.json();
     console.log(data);
-    console.log(`profile picture uri - ${data.profilePictureUri} `);
-
 
     set({ profile: data });
-
   },
 }));

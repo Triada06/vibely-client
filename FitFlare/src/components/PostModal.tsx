@@ -9,6 +9,8 @@ import {
   faChevronRight,
   faXmark,
   faPenToSquare,
+  faPlus,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
 import EditPostModal from "./EditPostModal";
@@ -27,6 +29,8 @@ interface Comment {
   commentedWhen: string;
   replies?: Comment[];
   postedBy: CommentUser;
+  isOwnComment?: boolean;
+  isLikedByUser?: boolean;
 }
 
 interface Profile {
@@ -97,8 +101,35 @@ export default function PostModal({
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [hasMoreComments, setHasMoreComments] = useState(true);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(
+    new Set()
+  );
+  const [loadingReplies, setLoadingReplies] = useState<Set<string>>(new Set());
+  const [replyPages, setReplyPages] = useState<Record<string, number>>({});
+  const [hasMoreReplies, setHasMoreReplies] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [comments, setComments] = useState<Comment[]>([]);
 
   const currentPost = posts[currentIndex];
+
+  useEffect(() => {
+    if (currentPost) {
+      setIsLiked(currentPost.isLikedByUser || false);
+      setIsSaved(savedPosts.some((post) => post.id === currentPost.id));
+      // Reset pagination and comments when post changes
+      setCurrentPage(1);
+      setHasMoreComments(true);
+      setExpandedReplies(new Set());
+      setReplyPages({});
+      setHasMoreReplies({});
+      setComments([]);
+      // Load initial comments
+      loadComments(1);
+    }
+  }, [currentPost?.id]);
 
   const loadComments = async (page: number) => {
     if (!currentPost || isLoadingComments || !hasMoreComments) return;
@@ -130,22 +161,29 @@ export default function PostModal({
           postedBy: {
             commenterName: comment.commenterName,
             commenterProfilePicture: comment.commenterProfilePicture,
-            commenterId: comment.id, // Using comment id as commenterId since it's not provided
+            commenterId: comment.commenterId || comment.id,
           },
+          isOwnComment:
+            comment.isOwnComment ||
+            comment.commenterId === localStorage.getItem("userId"),
+          isLikedByUser: comment.isLikedByUser || false,
+          commentLikeCount: comment.commentLikeCount || 0,
         }));
 
         if (page === 1) {
-          currentPost.comments = transformedData;
+          setComments(transformedData);
         } else {
-          currentPost.comments = [
-            ...(currentPost.comments || []),
-            ...transformedData,
-          ];
+          setComments((prev) => [...prev, ...transformedData]);
         }
 
         // If we get less than 20 comments, we've reached the end
         setHasMoreComments(data.length === 20);
         setCurrentPage(page);
+
+        // If we have more comments and this is the first page, load the next page
+        if (page === 1 && data.length === 20) {
+          loadComments(2);
+        }
       } else {
         console.error("Failed to load comments");
       }
@@ -155,43 +193,6 @@ export default function PostModal({
       setIsLoadingComments(false);
     }
   };
-
-  useEffect(() => {
-    if (currentPost) {
-      setIsLiked(currentPost.isLikedByUser || false);
-      setIsSaved(savedPosts.some((post) => post.id === currentPost.id));
-      // Reset pagination when post changes
-      setCurrentPage(1);
-      setHasMoreComments(true);
-      loadComments(1);
-    }
-  }, [currentPost, savedPosts]);
-
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasMoreComments &&
-          !isLoadingComments
-        ) {
-          loadComments(currentPage + 1);
-        }
-      },
-      { threshold: 1.0 }
-    );
-
-    if (commentsEndRef.current) {
-      observer.observe(commentsEndRef.current);
-    }
-
-    return () => {
-      if (commentsEndRef.current) {
-        observer.unobserve(commentsEndRef.current);
-      }
-    };
-  }, [currentPage, hasMoreComments, isLoadingComments]);
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !currentPost?.id) return; // Ensure post ID exists
@@ -240,12 +241,10 @@ export default function PostModal({
               "/default-profile-picture.jpg",
           },
           replies: addedComment.replies || [], // Ensure replies array exists
+          isLikedByUser: addedComment.isLikedByUser || false,
         };
 
-        currentPost.comments = [
-          ...(currentPost.comments || []),
-          formattedAddedComment,
-        ];
+        setComments((prev) => [...prev, formattedAddedComment]);
         currentPost.commentCount += 1;
 
         // Clear the input
@@ -479,6 +478,270 @@ export default function PostModal({
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/comment/${commentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        // Remove the comment from the current post's comments
+        setComments((prev) =>
+          prev.filter((comment) => comment.id !== commentId)
+        );
+        currentPost.commentCount -= 1;
+        console.log("Comment deleted successfully");
+      } else {
+        console.error("Failed to delete comment");
+      }
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+    }
+  };
+
+  const handleAddReply = async (commentId: string) => {
+    if (!replyContent.trim() || !currentPost?.id) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/comment/${commentId}/addreply`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: replyContent,
+            postId: currentPost.id,
+          }),
+        }
+      );
+
+      if (res.ok) {
+        const addedReply = await res.json();
+        const formattedReply: Comment = {
+          id: addedReply.id,
+          content: addedReply.content,
+          commentedWhen: addedReply.commentedWhen,
+          commentLikeCount: addedReply.commentLikeCount,
+          replyCount: addedReply.replyCount,
+          postedBy: {
+            commenterId: addedReply.commenterId,
+            commenterName: addedReply.commenterName,
+            commenterProfilePicture: addedReply.commenterProfilePicture,
+          },
+          replies: [],
+          isOwnComment: true,
+          isLikedByUser: addedReply.isLikedByUser || false,
+        };
+
+        // Find the parent comment and add the reply
+        const parentComment = comments.find(
+          (comment) => comment.id === commentId
+        );
+        if (parentComment) {
+          if (!parentComment.replies) {
+            parentComment.replies = [];
+          }
+          parentComment.replies.push(formattedReply);
+          parentComment.replyCount += 1;
+        }
+
+        setReplyContent("");
+        setReplyingTo(null);
+        console.log("Reply added successfully");
+      } else {
+        console.error("Failed to add reply");
+      }
+    } catch (err) {
+      console.error("Error adding reply:", err);
+    }
+  };
+
+  const loadReplies = async (commentId: string, page: number) => {
+    if (!currentPost?.id || loadingReplies.has(commentId)) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    setLoadingReplies((prev) => new Set(prev).add(commentId));
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/comment/${commentId}/replies?postId=${currentPost.id}&page=${page}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const transformedReplies = data.map((reply: any) => ({
+          ...reply,
+          postedBy: {
+            commenterName: reply.commenterName,
+            commenterProfilePicture: reply.commenterProfilePicture,
+            commenterId: reply.id,
+          },
+          isOwnComment: reply.isOwnComment,
+        }));
+
+        const parentComment = comments.find(
+          (comment) => comment.id === commentId
+        );
+        if (parentComment) {
+          if (page === 1) {
+            parentComment.replies = transformedReplies;
+          } else {
+            parentComment.replies = [
+              ...(parentComment.replies || []),
+              ...transformedReplies,
+            ];
+          }
+        }
+
+        setHasMoreReplies((prev) => ({
+          ...prev,
+          [commentId]: data.length === 20,
+        }));
+        setReplyPages((prev) => ({
+          ...prev,
+          [commentId]: page,
+        }));
+      } else {
+        console.error("Failed to load replies");
+      }
+    } catch (err) {
+      console.error("Error loading replies:", err);
+    } finally {
+      setLoadingReplies((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(commentId);
+        return newSet;
+      });
+    }
+  };
+
+  const toggleReplies = (commentId: string) => {
+    setExpandedReplies((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+        // Load replies if not already loaded
+        if (!replyPages[commentId]) {
+          loadReplies(commentId, 1);
+        }
+      }
+      return newSet;
+    });
+  };
+
+  const handleLikeComment = async (commentId: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    // Find the comment first to check its current like status
+    const findComment = (comments: Comment[]): Comment | null => {
+      for (let comment of comments) {
+        if (comment.id === commentId) {
+          return comment;
+        }
+        if (comment.replies) {
+          const found = findComment(comment.replies);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const comment = findComment(comments);
+    if (!comment) return;
+
+    // Optimistically update the UI
+    const previousLikeState = comment.isLikedByUser;
+    const previousLikeCount = comment.commentLikeCount;
+
+    // Create a new array to trigger re-render
+    const updateCommentInArray = (comments: Comment[]): Comment[] => {
+      return comments.map((c) => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            isLikedByUser: !previousLikeState,
+            commentLikeCount:
+              c.commentLikeCount + (!previousLikeState ? 1 : -1),
+          };
+        }
+        if (c.replies) {
+          return {
+            ...c,
+            replies: updateCommentInArray(c.replies),
+          };
+        }
+        return c;
+      });
+    };
+
+    // Update the state immediately
+    setComments((prev) => updateCommentInArray(prev));
+
+    try {
+      // Use the appropriate endpoint based on the current like state
+      const endpoint = previousLikeState ? "unlike" : "like";
+      const res = await fetch(
+        `https://localhost:7014/api/comment/${commentId}/${endpoint}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        // Revert the optimistic update if the request fails
+        setComments((prev) => updateCommentInArray(prev));
+        console.error(`Failed to ${endpoint} comment`);
+      }
+    } catch (err) {
+      // Revert the optimistic update if there's an error
+      setComments((prev) => updateCommentInArray(prev));
+      console.error(
+        `Error ${previousLikeState ? "unliking" : "liking"} comment:`,
+        err
+      );
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -507,6 +770,165 @@ export default function PostModal({
     if (!isOwnProfile || isSavedPostsTab) return false;
     return profile.posts.some((post) => post.id === currentPost.id);
   };
+
+  const renderComment = (comment: Comment, isReply = false) => (
+    <div key={comment.id} className={`mb-4 ${isReply ? "ml-10" : ""}`}>
+      <div className="flex items-start gap-2">
+        <img
+          src={
+            comment.postedBy.commenterProfilePicture ??
+            "/default-profile-picture.jpg"
+          }
+          alt={comment.postedBy.commenterName}
+          className={`${
+            isReply ? "w-6 h-6" : "w-8 h-8"
+          } rounded-full object-cover`}
+        />
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm dark:text-white">
+              {comment.postedBy.commenterName}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {formatPostedWhen(comment.commentedWhen)}
+            </span>
+          </div>
+          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+            {comment.content}
+          </p>
+          <div className="flex items-center gap-4 mt-1">
+            <button
+              onClick={() => handleLikeComment(comment.id)}
+              className={`flex items-center gap-1 ${
+                comment.isLikedByUser
+                  ? "text-red-500"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              <FontAwesomeIcon
+                icon={faHeart}
+                className={`text-xs ${
+                  comment.isLikedByUser ? "text-red-500" : ""
+                }`}
+              />
+              <span className="text-xs">{comment.commentLikeCount}</span>
+            </button>
+            {!isReply && (
+              <button
+                onClick={() => setReplyingTo(comment.id)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                Reply
+              </button>
+            )}
+            {comment.isOwnComment && (
+              <button
+                onClick={() => handleDeleteComment(comment.id)}
+                className="text-xs text-red-500 hover:text-red-600"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+          {!isReply && comment.replyCount > 0 && (
+            <div className="mt-2">
+              <button
+                onClick={() => toggleReplies(comment.id)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                {expandedReplies.has(comment.id)
+                  ? "Hide replies"
+                  : `View ${comment.replyCount} replies`}
+              </button>
+              {expandedReplies.has(comment.id) && (
+                <div className="mt-2">
+                  {comment.replies?.map((reply) => renderComment(reply, true))}
+                  {hasMoreReplies[comment.id] && (
+                    <button
+                      onClick={() =>
+                        loadReplies(
+                          comment.id,
+                          (replyPages[comment.id] || 1) + 1
+                        )
+                      }
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs"
+                      disabled={loadingReplies.has(comment.id)}
+                    >
+                      {loadingReplies.has(comment.id) ? (
+                        <FontAwesomeIcon
+                          icon={faSpinner}
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <>
+                          <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                          <span className="text-gray-600 dark:text-gray-300">
+                            Load more replies
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {!isReply && replyingTo === comment.id && (
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Write a reply..."
+                className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md border-none outline-none dark:text-white text-sm"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddReply(comment.id);
+                  }
+                }}
+              />
+              <button
+                onClick={() => handleAddReply(comment.id)}
+                disabled={!replyContent.trim()}
+                className={`px-4 py-2 rounded-md font-semibold text-sm ${
+                  replyContent.trim()
+                    ? "text-blue-500 hover:text-blue-600"
+                    : "text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Reply
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCommentsSection = () => (
+    <>
+      {comments && comments.length > 0 ? (
+        <>
+          {comments.map((comment) => renderComment(comment))}
+          {hasMoreComments && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={() => loadComments(currentPage + 1)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                disabled={isLoadingComments}
+              >
+                <FontAwesomeIcon icon={faPlus} className="text-sm" />
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center text-gray-400 text-sm mt-4">
+          No comments yet.
+        </div>
+      )}
+    </>
+  );
 
   if (!isOpen) return null;
 
@@ -615,87 +1037,7 @@ export default function PostModal({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 min-h-[100px]">
-            {currentPost.comments && currentPost.comments.length > 0 ? (
-              <>
-                {currentPost.comments.map((comment) => (
-                  <div key={comment.id} className="mb-4">
-                    <div className="flex items-start gap-2">
-                      <img
-                        src={
-                          comment.postedBy.commenterProfilePicture ??
-                          "/default-profile-picture.jpg"
-                        }
-                        alt={comment.postedBy.commenterName}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm dark:text-white">
-                            {comment.postedBy.commenterName}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatPostedWhen(comment.commentedWhen)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
-                          {comment.content}
-                        </p>
-                        <div className="flex items-center gap-4 mt-1">
-                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                            Like
-                          </button>
-                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                            Reply
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    {comment.replies && comment.replies.length > 0 && (
-                      <div className="ml-10 mt-2">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="mb-2">
-                            <div className="flex items-start gap-2">
-                              <img
-                                src={
-                                  reply.postedBy.commenterProfilePicture ??
-                                  "/default-profile-picture.jpg"
-                                }
-                                alt={reply.postedBy.commenterName}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-xs dark:text-white">
-                                    {reply.postedBy.commenterName}
-                                  </span>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatPostedWhen(reply.commentedWhen)}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
-                                  {reply.content}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={commentsEndRef} className="h-4">
-                  {isLoadingComments && (
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="text-center text-gray-400 text-sm mt-4">
-                No comments yet.
-              </div>
-            )}
+            {renderCommentsSection()}
           </div>
 
           <div className="p-4 border-t border-gray-200 dark:bg-[#1C1C1E]">
@@ -810,87 +1152,7 @@ export default function PostModal({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-2">
-              {currentPost.comments && currentPost.comments.length > 0 ? (
-                <>
-                  {currentPost.comments.map((comment) => (
-                    <div key={comment.id} className="mb-4">
-                      <div className="flex items-start gap-2">
-                        <img
-                          src={
-                            comment.postedBy.commenterProfilePicture ??
-                            "/default-profile-picture.jpg"
-                          }
-                          alt={comment.postedBy.commenterName}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm dark:text-white">
-                              {comment.postedBy.commenterName}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatPostedWhen(comment.commentedWhen)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
-                            {comment.content}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1">
-                            <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                              Like
-                            </button>
-                            <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                              Reply
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      {comment.replies && comment.replies.length > 0 && (
-                        <div className="ml-10 mt-2">
-                          {comment.replies.map((reply) => (
-                            <div key={reply.id} className="mb-2">
-                              <div className="flex items-start gap-2">
-                                <img
-                                  src={
-                                    reply.postedBy.commenterProfilePicture ??
-                                    "/default-profile-picture.jpg"
-                                  }
-                                  alt={reply.postedBy.commenterName}
-                                  className="w-6 h-6 rounded-full object-cover"
-                                />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-xs dark:text-white">
-                                      {reply.postedBy.commenterName}
-                                    </span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {formatPostedWhen(reply.commentedWhen)}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
-                                    {reply.content}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <div ref={commentsEndRef} className="h-4">
-                    {isLoadingComments && (
-                      <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center text-gray-400 text-sm mt-4">
-                  No comments yet.
-                </div>
-              )}
+              {renderCommentsSection()}
             </div>
 
             <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-[#1C1C1E]">
