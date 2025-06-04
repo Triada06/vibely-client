@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
@@ -6,7 +6,7 @@ interface EditPostModalProps {
   isOpen: boolean;
   onClose: () => void;
   post: {
-    id: number;
+    id: string;
     description: string;
     hashTags: string[];
   };
@@ -24,6 +24,12 @@ export default function EditPostModal({
   const [description, setDescription] = useState(post.description);
   const [tags, setTags] = useState(post.hashTags.join(" "));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    setDescription(post.description);
+    setTags(post.hashTags.join(" "));
+    setShowDeleteConfirm(false);
+  }, [post]);
 
   const handleSave = () => {
     const tagArray = tags

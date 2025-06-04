@@ -14,19 +14,19 @@ import ReelPlayer from "./VideoPlayer";
 import EditPostModal from "./EditPostModal";
 
 interface CommentUser {
-  userName: string;
-  profilePictureUri: string;
-  userId: string;
+  commenterName: string;
+  commenterProfilePicture: string;
+  commenterId: string;
 }
 
 interface Comment {
-  id: number;
-  postedBy: CommentUser;
+  id: string;
   content: string;
-  likesCount: number;
+  commentLikeCount: number;
   replyCount: number;
-  replies: Comment[];
-  postedWhen: string;
+  commentedWhen: string;
+  replies?: Comment[];
+  postedBy: CommentUser;
 }
 
 interface Profile {
@@ -38,7 +38,7 @@ interface Profile {
 }
 
 interface Post {
-  id: number;
+  id: string;
   mediaUri: string;
   mediaType: "image" | "video";
   likeCount: number;
@@ -50,7 +50,7 @@ interface Post {
   isLikedByUser: boolean;
 }
 interface SavedPost {
-  id: number;
+  id: string;
   mediaUri: string;
   mediaType: "image" | "video";
   likeCount: number;
@@ -93,55 +93,108 @@ export default function PostModal({
   const [showMobileComments, setShowMobileComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [hasMoreComments, setHasMoreComments] = useState(true);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const currentPost = posts[currentIndex];
 
-  // Mock comments data
-  const mockComments: Comment[] = [
-    {
-      id: 1,
-      postedBy: {
-        userName: "johndoe",
-        profilePictureUri: "https://i.pravatar.cc/150?img=1",
-        userId: "1",
-      },
-      content: "Great workout! 💪",
-      likesCount: 5,
-      replyCount: 2,
-      postedWhen: "2024-03-15T10:30:00Z",
-      replies: [
+  const loadComments = async (page: number) => {
+    if (!currentPost || isLoadingComments || !hasMoreComments) return;
+
+    setIsLoadingComments(true);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/comment/post/${currentPost.id}?page=${page}`,
         {
-          id: 2,
-          postedBy: {
-            userName: "janedoe",
-            profilePictureUri: "https://i.pravatar.cc/150?img=2",
-            userId: "2",
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-          content: "Thanks! It was intense!",
-          likesCount: 3,
-          replyCount: 0,
-          postedWhen: "2024-03-15T10:35:00Z",
-          replies: [],
-        },
-      ],
-    },
-    {
-      id: 3,
-      postedBy: {
-        userName: "fitnessguru",
-        profilePictureUri: "https://i.pravatar.cc/150?img=3",
-        userId: "3",
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(data);
+
+        // Transform the data to match our Comment interface
+        const transformedData = data.map((comment: any) => ({
+          ...comment,
+          postedBy: {
+            commenterName: comment.commenterName,
+            commenterProfilePicture: comment.commenterProfilePicture,
+            commenterId: comment.id, // Using comment id as commenterId since it's not provided
+          },
+        }));
+
+        if (page === 1) {
+          currentPost.comments = transformedData;
+        } else {
+          currentPost.comments = [
+            ...(currentPost.comments || []),
+            ...transformedData,
+          ];
+        }
+
+        // If we get less than 20 comments, we've reached the end
+        setHasMoreComments(data.length === 20);
+        setCurrentPage(page);
+      } else {
+        console.error("Failed to load comments");
+      }
+    } catch (err) {
+      console.error("Error loading comments:", err);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentPost) {
+      setIsLiked(currentPost.isLikedByUser || false);
+      setIsSaved(savedPosts.some((post) => post.id === currentPost.id));
+      // Reset pagination when post changes
+      setCurrentPage(1);
+      setHasMoreComments(true);
+      loadComments(1);
+    }
+  }, [currentPost, savedPosts]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMoreComments &&
+          !isLoadingComments
+        ) {
+          loadComments(currentPage + 1);
+        }
       },
-      content: "What's your routine?",
-      likesCount: 2,
-      replyCount: 0,
-      postedWhen: "2024-03-15T11:00:00Z",
-      replies: [],
-    },
-  ];
+      { threshold: 1.0 }
+    );
+
+    if (commentsEndRef.current) {
+      observer.observe(commentsEndRef.current);
+    }
+
+    return () => {
+      if (commentsEndRef.current) {
+        observer.unobserve(commentsEndRef.current);
+      }
+    };
+  }, [currentPage, hasMoreComments, isLoadingComments]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !currentPost?.id) return; // Ensure post ID exists
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -151,7 +204,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}/comment`,
+        `https://localhost:7014/api/comment`, // Updated API endpoint
         {
           method: "POST",
           headers: {
@@ -160,47 +213,52 @@ export default function PostModal({
           },
           body: JSON.stringify({
             content: newComment,
+            postId: currentPost.id, // Include post ID in the body
           }),
         }
       );
 
       if (res.ok) {
+        const addedComment = await res.json(); // Assuming the backend returns the added comment
+        console.log("Comment added successfully:", addedComment);
+
         // Add the new comment to the local state
-        const newCommentObj: Comment = {
-          id: Date.now(), // Temporary ID
+        // Make sure to structure the addedComment to match the Comment interface.
+        const formattedAddedComment: Comment = {
+          id: addedComment.id,
+          content: addedComment.content,
+          commentedWhen: addedComment.commentedWhen,
+          commentLikeCount: addedComment.commentLikeCount,
+          replyCount: addedComment.replyCount,
           postedBy: {
-            userName: profile.userName,
-            profilePictureUri: profile.profilePictureUri,
-            userId: "current-user-id", // You'll need to get this from your auth system
+            commenterId:
+              addedComment.commenterId ||
+              "current-user-id-gottaga-get-from-the-token", // Use commenterId if available, otherwise use placeholder
+            commenterName: addedComment.commenterName,
+            commenterProfilePicture:
+              addedComment.commenterProfilePicture ||
+              "/default-profile-picture.jpg",
           },
-          content: newComment,
-          likesCount: 0,
-          replyCount: 0,
-          postedWhen: new Date().toISOString(),
-          replies: [],
+          replies: addedComment.replies || [], // Ensure replies array exists
         };
 
-        // Update the post's comments
-        currentPost.comments = [...(currentPost.comments || []), newCommentObj];
+        currentPost.comments = [
+          ...(currentPost.comments || []),
+          formattedAddedComment,
+        ];
         currentPost.commentCount += 1;
 
         // Clear the input
         setNewComment("");
         console.log("Comment added successfully");
       } else {
-        console.error("Failed to add comment");
+        console.error("Failed to add comment", res.status);
+        // Handle specific error statuses if needed
       }
     } catch (err) {
       console.error("Error adding comment:", err);
     }
   };
-
-  useEffect(() => {
-    if (currentPost) {
-      setIsLiked(currentPost.isLikedByUser || false);
-      setIsSaved(savedPosts.some((post) => post.id === currentPost.id));
-    }
-  }, [currentPost, savedPosts]);
 
   const handleBackdropClick = (e: MouseEvent) => {
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
@@ -525,7 +583,9 @@ export default function PostModal({
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex gap-3 items-center">
               <img
-                src={profile.profilePictureUri ?? "/default-profile-picture.jpg"}
+                src={
+                  profile.profilePictureUri ?? "/default-profile-picture.jpg"
+                }
                 alt=""
                 className="w-8 h-8 rounded-full object-cover"
               />
@@ -556,66 +616,81 @@ export default function PostModal({
 
           <div className="flex-1 overflow-y-auto p-4 min-h-[100px]">
             {currentPost.comments && currentPost.comments.length > 0 ? (
-              currentPost.comments.map((comment) => (
-                <div key={comment.id} className="mb-4">
-                  <div className="flex items-start gap-2">
-                    <img
-                      src={comment.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
-                      alt={comment.postedBy.userName}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm dark:text-white">
-                          {comment.postedBy.userName}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatPostedWhen(comment.postedWhen)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
-                        {comment.content}
-                      </p>
-                      <div className="flex items-center gap-4 mt-1">
-                        <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                          Like
-                        </button>
-                        <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                          Reply
-                        </button>
+              <>
+                {currentPost.comments.map((comment) => (
+                  <div key={comment.id} className="mb-4">
+                    <div className="flex items-start gap-2">
+                      <img
+                        src={
+                          comment.postedBy.commenterProfilePicture ??
+                          "/default-profile-picture.jpg"
+                        }
+                        alt={comment.postedBy.commenterName}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm dark:text-white">
+                            {comment.postedBy.commenterName}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatPostedWhen(comment.commentedWhen)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+                          {comment.content}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                            Like
+                          </button>
+                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                            Reply
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="ml-10 mt-2">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="mb-2">
-                          <div className="flex items-start gap-2">
-                            <img
-                              src={reply.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
-                              alt={reply.postedBy.userName}
-                              className="w-6 h-6 rounded-full object-cover"
-                            />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-xs dark:text-white">
-                                  {reply.postedBy.userName}
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {formatPostedWhen(reply.postedWhen)}
-                                </span>
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="ml-10 mt-2">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="mb-2">
+                            <div className="flex items-start gap-2">
+                              <img
+                                src={
+                                  reply.postedBy.commenterProfilePicture ??
+                                  "/default-profile-picture.jpg"
+                                }
+                                alt={reply.postedBy.commenterName}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-xs dark:text-white">
+                                    {reply.postedBy.commenterName}
+                                  </span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatPostedWhen(reply.commentedWhen)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
+                                  {reply.content}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
-                                {reply.content}
-                              </p>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div ref={commentsEndRef} className="h-4">
+                  {isLoadingComments && (
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
                     </div>
                   )}
                 </div>
-              ))
+              </>
             ) : (
               <div className="text-center text-gray-400 text-sm mt-4">
                 No comments yet.
@@ -696,7 +771,9 @@ export default function PostModal({
             {/* Header */}
             <div className="relative border-b border-gray-200 dark:border-gray-700 p-4 flex items-center">
               <img
-                src={profile.profilePictureUri ?? "/default-profile-picture.jpg"}
+                src={
+                  profile.profilePictureUri ?? "/default-profile-picture.jpg"
+                }
                 alt="User avatar"
                 className="w-8 h-8 rounded-full object-cover mr-3"
               />
@@ -734,66 +811,81 @@ export default function PostModal({
 
             <div className="flex-1 overflow-y-auto px-4 py-2">
               {currentPost.comments && currentPost.comments.length > 0 ? (
-                currentPost.comments.map((comment) => (
-                  <div key={comment.id} className="mb-4">
-                    <div className="flex items-start gap-2">
-                      <img
-                        src={comment.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
-                        alt={comment.postedBy.userName}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm dark:text-white">
-                            {comment.postedBy.userName}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatPostedWhen(comment.postedWhen)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
-                          {comment.content}
-                        </p>
-                        <div className="flex items-center gap-4 mt-1">
-                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                            Like
-                          </button>
-                          <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                            Reply
-                          </button>
+                <>
+                  {currentPost.comments.map((comment) => (
+                    <div key={comment.id} className="mb-4">
+                      <div className="flex items-start gap-2">
+                        <img
+                          src={
+                            comment.postedBy.commenterProfilePicture ??
+                            "/default-profile-picture.jpg"
+                          }
+                          alt={comment.postedBy.commenterName}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm dark:text-white">
+                              {comment.postedBy.commenterName}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatPostedWhen(comment.commentedWhen)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+                            {comment.content}
+                          </p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                              Like
+                            </button>
+                            <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                              Reply
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    {comment.replies && comment.replies.length > 0 && (
-                      <div className="ml-10 mt-2">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="mb-2">
-                            <div className="flex items-start gap-2">
-                              <img
-                                src={reply.postedBy.profilePictureUri ?? "/default-profile-picture.jpg"}
-                                alt={reply.postedBy.userName}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-xs dark:text-white">
-                                    {reply.postedBy.userName}
-                                  </span>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatPostedWhen(reply.postedWhen)}
-                                  </span>
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="ml-10 mt-2">
+                          {comment.replies.map((reply) => (
+                            <div key={reply.id} className="mb-2">
+                              <div className="flex items-start gap-2">
+                                <img
+                                  src={
+                                    reply.postedBy.commenterProfilePicture ??
+                                    "/default-profile-picture.jpg"
+                                  }
+                                  alt={reply.postedBy.commenterName}
+                                  className="w-6 h-6 rounded-full object-cover"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-xs dark:text-white">
+                                      {reply.postedBy.commenterName}
+                                    </span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {formatPostedWhen(reply.commentedWhen)}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
+                                    {reply.content}
+                                  </p>
                                 </div>
-                                <p className="text-xs text-gray-800 dark:text-gray-200 mt-1">
-                                  {reply.content}
-                                </p>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={commentsEndRef} className="h-4">
+                    {isLoadingComments && (
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
                       </div>
                     )}
                   </div>
-                ))
+                </>
               ) : (
                 <div className="text-center text-gray-400 text-sm mt-4">
                   No comments yet.
