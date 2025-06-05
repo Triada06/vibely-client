@@ -52,6 +52,9 @@ interface Post {
   postedWhen: string;
   hashTags: string[];
   isLikedByUser: boolean;
+  postedById: string;
+  authorProfilePicUri: string | null;
+  authorUserName: string;
 }
 interface SavedPost {
   id: string;
@@ -1006,14 +1009,15 @@ export default function PostModal({
             <div className="flex gap-3 items-center">
               <img
                 src={
-                  profile.profilePictureUri ?? "/default-profile-picture.jpg"
+                  currentPost.authorProfilePicUri ??
+                  "/default-profile-picture.jpg"
                 }
                 alt=""
                 className="w-8 h-8 rounded-full object-cover"
               />
               <div className="flex flex-col">
                 <span className="font-semibold dark:text-white">
-                  {profile.userName}
+                  {currentPost.authorUserName}
                 </span>
                 {currentPost.postedWhen && (
                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -1114,14 +1118,15 @@ export default function PostModal({
             <div className="relative border-b border-gray-200 dark:border-gray-700 p-4 flex items-center">
               <img
                 src={
-                  profile.profilePictureUri ?? "/default-profile-picture.jpg"
+                  currentPost.authorProfilePicUri ??
+                  "/default-profile-picture.jpg"
                 }
                 alt="User avatar"
                 className="w-8 h-8 rounded-full object-cover mr-3"
               />
               <div className="flex flex-col flex-1">
                 <span className="font-semibold dark:text-white">
-                  {profile.userName}
+                  {currentPost.authorUserName}
                 </span>
                 {currentPost.postedWhen && (
                   <span className="text-xs text-gray-500 dark:text-gray-400">
