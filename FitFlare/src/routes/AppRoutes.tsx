@@ -9,6 +9,7 @@ import ProfilePage from "../pages/ProfilePage";
 import SearchPage from "../pages/SearchPage";
 import SettingsPage from "../pages/SettingsPage";
 import UploadpostPage from "../pages/UploadPostPage";
+import UserProfilePage from "../pages/UserProfilePage";
 
 export const AppRoutes = {
   path: "/",
@@ -20,11 +21,12 @@ export const AppRoutes = {
   children: [
     { index: true, element: <HomePage /> },
     { path: "profile", element: <ProfilePage /> },
-    {path : "profile/settings", element: <SettingsPage />},
+    { path: "profile/settings", element: <SettingsPage /> },
     { path: "uploadpost", element: <UploadpostPage /> },
-    {path: "profile/edit", element: <ProfileEditPage />},
-    {path: "explore", element: <ExplorePage />},
-    {path: "messages", element: <MessagesPage />},
-    {path: "search", element: <SearchPage />},
+    { path: "profile/edit", element: <ProfileEditPage /> },
+    { path: "explore", element: <ExplorePage /> },
+    { path: "messages", element: <MessagesPage /> },
+    { path: "search", element: <SearchPage /> },
+    { path: "user/:id", element: <UserProfilePage /> },
   ],
 };
