@@ -14,6 +14,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
 import EditPostModal from "./EditPostModal";
+import { useAuthStore } from "../store/authStore"; // Import your auth store
+import { useProfileStore } from "../store/profileStore"; // Import your profile store
 
 interface CommentUser {
   commenterName: string;
@@ -158,6 +160,9 @@ export default function PostModal({
         const data = await res.json();
         console.log(data);
 
+        // Get userId from the authStore
+        const userId = useAuthStore.getState().userId;
+
         // Transform the data to match our Comment interface
         const transformedData = data.map((comment: any) => ({
           ...comment,
@@ -166,9 +171,8 @@ export default function PostModal({
             commenterProfilePicture: comment.commenterProfilePicture,
             commenterId: comment.commenterId || comment.id,
           },
-          isOwnComment:
-            comment.isOwnComment ||
-            comment.commenterId === localStorage.getItem("userId"),
+          // Calculate isOwnComment based on commenterId and userId from authStore
+          isOwnComment: userId === comment.commenterId,
           isLikedByUser: comment.isLikedByUser || false,
           commentLikeCount: comment.commentLikeCount || 0,
         }));
@@ -774,139 +778,145 @@ export default function PostModal({
     return profile.posts.some((post) => post.id === currentPost.id);
   };
 
-  const renderComment = (comment: Comment, isReply = false) => (
-    <div key={comment.id} className={`mb-4 ${isReply ? "ml-10" : ""}`}>
-      <div className="flex items-start gap-2">
-        <img
-          src={
-            comment.postedBy.commenterProfilePicture ??
-            "/default-profile-picture.jpg"
-          }
-          alt={comment.postedBy.commenterName}
-          className={`${
-            isReply ? "w-6 h-6" : "w-8 h-8"
-          } rounded-full object-cover`}
-        />
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm dark:text-white">
-              {comment.postedBy.commenterName}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {formatPostedWhen(comment.commentedWhen)}
-            </span>
-          </div>
-          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
-            {comment.content}
-          </p>
-          <div className="flex items-center gap-4 mt-1">
-            <button
-              onClick={() => handleLikeComment(comment.id)}
-              className={`flex items-center gap-1 ${
-                comment.isLikedByUser
-                  ? "text-red-500"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <FontAwesomeIcon
-                icon={faHeart}
-                className={`text-xs ${
-                  comment.isLikedByUser ? "text-red-500" : ""
+  const renderComment = (comment: Comment, isReply = false) => {
+    // Get the userId from profileStore
+    const userId = useProfileStore.getState().profile?.id;
+
+    return (
+      <div key={comment.id} className={`mb-4 ${isReply ? "ml-10" : ""}`}>
+        <div className="flex items-start gap-2">
+          <img
+            src={
+              comment.postedBy.commenterProfilePicture ??
+              "/default-profile-picture.jpg"
+            }
+            alt={comment.postedBy.commenterName}
+            className={`${
+              isReply ? "w-6 h-6" : "w-8 h-8"
+            } rounded-full object-cover`}
+          />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm dark:text-white">
+                {comment.postedBy.commenterName}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatPostedWhen(comment.commentedWhen)}
+              </span>
+            </div>
+            <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
+              {comment.content}
+            </p>
+            <div className="flex items-center gap-4 mt-1">
+              <button
+                onClick={() => handleLikeComment(comment.id)}
+                className={`flex items-center gap-1 ${
+                  comment.isLikedByUser
+                    ? "text-red-500"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
-              />
-              <span className="text-xs">{comment.commentLikeCount}</span>
-            </button>
-            {!isReply && (
-              <button
-                onClick={() => setReplyingTo(comment.id)}
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
-                Reply
+                <FontAwesomeIcon
+                  icon={faHeart}
+                  className={`text-xs ${
+                    comment.isLikedByUser ? "text-red-500" : ""
+                  }`}
+                />
+                <span className="text-xs">{comment.commentLikeCount}</span>
               </button>
-            )}
-            {comment.isOwnComment && (
-              <button
-                onClick={() => handleDeleteComment(comment.id)}
-                className="text-xs text-red-500 hover:text-red-600"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-          {!isReply && comment.replyCount > 0 && (
-            <div className="mt-2">
-              <button
-                onClick={() => toggleReplies(comment.id)}
-                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                {expandedReplies.has(comment.id)
-                  ? "Hide replies"
-                  : `View ${comment.replyCount} replies`}
-              </button>
-              {expandedReplies.has(comment.id) && (
-                <div className="mt-2">
-                  {comment.replies?.map((reply) => renderComment(reply, true))}
-                  {hasMoreReplies[comment.id] && (
-                    <button
-                      onClick={() =>
-                        loadReplies(
-                          comment.id,
-                          (replyPages[comment.id] || 1) + 1
-                        )
-                      }
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs"
-                      disabled={loadingReplies.has(comment.id)}
-                    >
-                      {loadingReplies.has(comment.id) ? (
-                        <FontAwesomeIcon
-                          icon={faSpinner}
-                          className="animate-spin"
-                        />
-                      ) : (
-                        <>
-                          <FontAwesomeIcon icon={faPlus} className="text-xs" />
-                          <span className="text-gray-600 dark:text-gray-300">
-                            Load more replies
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+              {!isReply && (
+                <button
+                  onClick={() => setReplyingTo(comment.id)}
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  Reply
+                </button>
+              )}
+              {/* Directly check if commenterId matches userId from profileStore */}
+              {comment.postedBy.commenterId === userId && (
+                <button
+                  onClick={() => handleDeleteComment(comment.id)}
+                  className="text-xs text-red-500 hover:text-red-600"
+                >
+                  Delete
+                </button>
               )}
             </div>
-          )}
-          {!isReply && replyingTo === comment.id && (
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="text"
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                placeholder="Write a reply..."
-                className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md border-none outline-none dark:text-white text-sm"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    handleAddReply(comment.id);
-                  }
-                }}
-              />
-              <button
-                onClick={() => handleAddReply(comment.id)}
-                disabled={!replyContent.trim()}
-                className={`px-4 py-2 rounded-md font-semibold text-sm ${
-                  replyContent.trim()
-                    ? "text-blue-500 hover:text-blue-600"
-                    : "text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                Reply
-              </button>
-            </div>
-          )}
+            {!isReply && comment.replyCount > 0 && (
+              <div className="mt-2">
+                <button
+                  onClick={() => toggleReplies(comment.id)}
+                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  {expandedReplies.has(comment.id)
+                    ? "Hide replies"
+                    : `View ${comment.replyCount} replies`}
+                </button>
+                {expandedReplies.has(comment.id) && (
+                  <div className="mt-2">
+                    {comment.replies?.map((reply) => renderComment(reply, true))}
+                    {hasMoreReplies[comment.id] && (
+                      <button
+                        onClick={() =>
+                          loadReplies(
+                            comment.id,
+                            (replyPages[comment.id] || 1) + 1
+                          )
+                        }
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs"
+                        disabled={loadingReplies.has(comment.id)}
+                      >
+                        {loadingReplies.has(comment.id) ? (
+                          <FontAwesomeIcon
+                            icon={faSpinner}
+                            className="animate-spin"
+                          />
+                        ) : (
+                          <>
+                            <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                            <span className="text-gray-600 dark:text-gray-300">
+                              Load more replies
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            {!isReply && replyingTo === comment.id && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-md border-none outline-none dark:text-white text-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddReply(comment.id);
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => handleAddReply(comment.id)}
+                  disabled={!replyContent.trim()}
+                  className={`px-4 py-2 rounded-md font-semibold text-sm ${
+                    replyContent.trim()
+                      ? "text-blue-500 hover:text-blue-600"
+                      : "text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Reply
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderCommentsSection = () => (
     <>
