@@ -5,6 +5,7 @@ import {
   faMessage,
   faCompass,
   faSquarePlus,
+  faBell,
 } from "@fortawesome/free-regular-svg-icons";
 
 export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
@@ -51,7 +52,7 @@ export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
             </li>
             <li className="m-2 sm:m-3 md:m-4 ">
               <NavLink
-                to="/explore"
+                to="/search"
                 className={({ isActive, isPending }) =>
                   isPending
                     ? "pending "
@@ -69,7 +70,7 @@ export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
             </li>
             <li className="m-2 sm:m-3 md:m-4 ">
               <NavLink
-                to="/explore"
+                to="/messages"
                 className={({ isActive, isPending }) =>
                   isPending
                     ? "pending "
@@ -80,6 +81,24 @@ export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
               >
                 <FontAwesomeIcon
                   icon={faMessage}
+                  className="mr-2 ml-2"
+                  size="lg"
+                />
+              </NavLink>
+            </li>
+            <li className="m-2 sm:m-3 md:m-4">
+              <NavLink
+                to="/notifications"
+                className={({ isActive, isPending }) =>
+                  isPending
+                    ? "pending "
+                    : isActive
+                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F]  flex text-start h-10 items-center text-xl"
+                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
+                }
+              >
+                <FontAwesomeIcon
+                  icon={faBell}
                   className="mr-2 ml-2"
                   size="lg"
                 />

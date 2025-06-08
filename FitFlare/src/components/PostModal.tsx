@@ -14,16 +14,16 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
 import EditPostModal from "./EditPostModal";
-import { useAuthStore } from "../store/authStore"; // Import your auth store
-import { useProfileStore } from "../store/profileStore"; // Import your profile store
+import { useAuthStore } from "../store/authStore"; 
+import { useProfileStore } from "../store/profileStore"; 
 
-interface CommentUser {
+export interface CommentUser {
   commenterName: string;
   commenterProfilePicture: string;
   commenterId: string;
 }
 
-interface Comment {
+export interface Comment {
   id: string;
   content: string;
   commentLikeCount: number;
@@ -35,7 +35,7 @@ interface Comment {
   isLikedByUser?: boolean;
 }
 
-interface Profile {
+export interface Profile {
   profilePictureUri: string;
   userName: string;
   postsCount: number;
@@ -43,7 +43,7 @@ interface Profile {
   posts: Post[];
 }
 
-interface Post {
+export interface Post {
   id: string;
   mediaUri: string;
   mediaType: "image" | "video";
@@ -58,7 +58,8 @@ interface Post {
   authorProfilePicUri: string | null;
   authorUserName: string;
 }
-interface SavedPost {
+
+export interface SavedPost {
   id: string;
   mediaUri: string;
   mediaType: "image" | "video";
@@ -69,6 +70,9 @@ interface SavedPost {
   postedWhen: string;
   hashTags: string[];
   isLikedByUser: boolean;
+  postedById: string;
+  authorProfilePicUri: string | null;
+  authorUserName: string;
 }
 
 interface PostModalProps {
@@ -854,7 +858,9 @@ export default function PostModal({
                 </button>
                 {expandedReplies.has(comment.id) && (
                   <div className="mt-2">
-                    {comment.replies?.map((reply) => renderComment(reply, true))}
+                    {comment.replies?.map((reply) =>
+                      renderComment(reply, true)
+                    )}
                     {hasMoreReplies[comment.id] && (
                       <button
                         onClick={() =>
@@ -873,7 +879,10 @@ export default function PostModal({
                           />
                         ) : (
                           <>
-                            <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                            <FontAwesomeIcon
+                              icon={faPlus}
+                              className="text-xs"
+                            />
                             <span className="text-gray-600 dark:text-gray-300">
                               Load more replies
                             </span>

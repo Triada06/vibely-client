@@ -11,7 +11,13 @@ import {
   faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCompass, faMessage, faSquarePlus } from "@fortawesome/free-regular-svg-icons";
+import {
+  faBell,
+  faCompass,
+  faMessage,
+  faSquarePlus,
+} from "@fortawesome/free-regular-svg-icons";
+import NotificationDropdown from "../components/NotificationDropdown";
 
 import { useAuthStore } from "../store/authStore";
 
@@ -155,6 +161,26 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                 Messages
               </NavLink>
             </li>
+            <li className="m-2">
+              <NavLink
+                to="/notifications"
+                className={({ isActive, isPending }) =>
+                  isPending
+                    ? "pending "
+                    : isActive
+                    ? "transition-all dark:text-[#4DD0E1] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#E07A5F]  flex text-start h-10 items-center text-xl"
+                    : "transition-all dark:text-[#EAEAEA] hover:rounded-xl duration-300 ease-in-out dark:hover:bg-[#B794F4] dark:hover:text-[#2A2A2D] hover:bg-[#4B3F72] hover:brightness-110 hover:text-[#EAF2EF] text-[#2E2E2E]  flex text-start h-10 items-center text-xl"
+                }
+              >
+                <FontAwesomeIcon
+                  icon={faBell}
+                  className="mr-2 ml-2"
+                  size="lg"
+                />
+                Notifications
+              </NavLink>
+            </li>
+          
             <li className="m-2">
               <NavLink
                 to="/uploadpost"

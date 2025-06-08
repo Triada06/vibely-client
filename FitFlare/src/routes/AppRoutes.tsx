@@ -4,6 +4,7 @@ import RequireAuth from "../guards/ReqiureAuth";
 import ExplorePage from "../pages/ExplorePage";
 import HomePage from "../pages/HomePage";
 import MessagesPage from "../pages/MessagesPage";
+import NotificationsPage from "../pages/NotificationsPage";
 import ProfileEditPage from "../pages/ProfileEditPage";
 import ProfilePage from "../pages/ProfilePage";
 import SearchPage from "../pages/SearchPage";
@@ -27,6 +28,7 @@ export const AppRoutes = {
     { path: "explore", element: <ExplorePage /> },
     { path: "messages", element: <MessagesPage /> },
     { path: "search", element: <SearchPage /> },
+    {path: "notifications", element: <NotificationsPage />},
     { path: "user/:id", element: <UserProfilePage /> },
   ],
 };

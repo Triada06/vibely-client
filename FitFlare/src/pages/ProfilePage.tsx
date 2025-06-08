@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import {
@@ -11,14 +11,50 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useProfileStore } from "../store/profileStore";
 import PostModal from "../components/PostModal";
+import { useAuthStore } from "../store/authStore";
+import type {
+  CommentUser,
+  Comment,
+  Post,
+  SavedPost,
+  Profile,
+} from "../components/PostModal";
+
+interface ProfileData {
+  isPrivate: boolean;
+  id: string;
+  userName: string;
+  fullName: string;
+  postsCount: number;
+  bio: string;
+  profilePictureUri: string;
+  followersCount: number;
+  followingCount: number;
+  posts: Post[];
+  savedPosts: SavedPost[];
+}
+
+interface Follower {
+  id: string;
+  userName: string;
+  profilePictureUri: string | null;
+}
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"posts" | "saved">("posts");
   const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(
     null
   );
+  const [followers, setFollowers] = useState<Follower[]>([]);
+  const [followings, setFollowings] = useState<Follower[]>([]);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingsModal, setShowFollowingsModal] = useState(false);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+  const [loadingFollowings, setLoadingFollowings] = useState(false);
 
   const { profile, fetchUser } = useProfileStore();
+  const { token } = useAuthStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUser();
@@ -32,10 +68,81 @@ export default function ProfilePage() {
     setSelectedPostIndex(null);
   };
 
+  const fetchFollowers = async () => {
+    if (!profile?.id || !token) return;
+    try {
+      setLoadingFollowers(true);
+      const response = await fetch(
+        `https://localhost:7014/api/follow/${profile.id}/followers`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch followers");
+      }
+
+      const text = await response.text();
+      if (!text) {
+        setFollowers([]);
+        return;
+      }
+      const data = JSON.parse(text);
+      setFollowers(data);
+    } catch (err) {
+      console.error("Error fetching followers:", err);
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  const fetchFollowings = async () => {
+    if (!profile?.id || !token) return;
+    try {
+      setLoadingFollowings(true);
+      const response = await fetch(
+        `https://localhost:7014/api/follow/${profile.id}/followings`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch followings");
+      }
+
+      const text = await response.text();
+      if (!text) {
+        setFollowings([]);
+        return;
+      }
+      const data = JSON.parse(text);
+      setFollowings(data);
+    } catch (err) {
+      console.error("Error fetching followings:", err);
+    } finally {
+      setLoadingFollowings(false);
+    }
+  };
+
+  const handleFollowersClick = async () => {
+    setShowFollowersModal(true);
+    await fetchFollowers();
+  };
+
+  const handleFollowingsClick = async () => {
+    setShowFollowingsModal(true);
+    await fetchFollowings();
+  };
+
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8  pb-20 h-full min-h-screen">
       <div className="flex flex-col h-full">
-        ``
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8">
           <div className="md:flex-shrink-0">
             <img
@@ -71,11 +178,17 @@ export default function ProfilePage() {
                 <span className="font-semibold">{profile?.postsCount}</span>{" "}
                 posts
               </div>
-              <div className="hover:opacity-80 dark:text-[#EAEAEA]">
+              <div
+                className="hover:opacity-80 dark:text-[#EAEAEA] cursor-pointer"
+                onClick={handleFollowersClick}
+              >
                 <span className="font-semibold">{profile?.followersCount}</span>{" "}
                 followers
               </div>
-              <div className="hover:opacity-80 dark:text-[#EAEAEA]">
+              <div
+                className="hover:opacity-80 dark:text-[#EAEAEA] cursor-pointer"
+                onClick={handleFollowingsClick}
+              >
                 <span className="font-semibold">{profile?.followingCount}</span>{" "}
                 following
               </div>
@@ -225,9 +338,16 @@ export default function ProfilePage() {
         )}
         {selectedPostIndex !== null && profile?.posts && (
           <PostModal
-            profile={profile}
+            profile={{
+              profilePictureUri:
+                profile.profilePictureUri ?? "/default-profile-picture.jpg",
+              userName: profile.userName,
+              postsCount: profile.postsCount,
+              bio: profile.bio,
+              posts: profile.posts,
+            }}
             posts={activeTab === "posts" ? profile.posts : profile.savedPosts}
-            savedPosts={profile.savedPosts}
+            savedPosts={profile.savedPosts as SavedPost[]}
             initialPostIndex={selectedPostIndex}
             isOpen={selectedPostIndex !== null}
             onClose={handleCloseModal}
@@ -239,6 +359,142 @@ export default function ProfilePage() {
             isOwnProfile={true}
             isSavedPostsTab={activeTab === "saved"}
           />
+        )}
+
+        {/* Followers Modal */}
+        {showFollowersModal && profile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="relative bg-white dark:bg-[#262626] rounded-xl shadow-xl w-full max-w-sm max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Followers
+                </h3>
+                <button
+                  onClick={() => setShowFollowersModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-grow">
+                {loadingFollowers ? (
+                  <div className="flex justify-center items-center p-6">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : followers.length > 0 ? (
+                  followers.map((follower) => (
+                    <div
+                      key={follower.id}
+                      className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors cursor-pointer"
+                      onClick={() => {
+                        setShowFollowersModal(false);
+                        navigate(`/user/${follower.id}`);
+                      }}
+                    >
+                      <img
+                        src={
+                          follower.profilePictureUri ??
+                          "/default-profile-picture.jpg"
+                        }
+                        alt={follower.userName}
+                        className="w-10 h-10 rounded-full object-cover mr-3"
+                      />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                          {follower.userName}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                    You have no followers yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Followings Modal */}
+        {showFollowingsModal && profile && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="relative bg-white dark:bg-[#262626] rounded-xl shadow-xl w-full max-w-sm max-h-[80vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Following
+                </h3>
+                <button
+                  onClick={() => setShowFollowingsModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-grow">
+                {loadingFollowings ? (
+                  <div className="flex justify-center items-center p-6">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : followings.length > 0 ? (
+                  followings.map((following) => (
+                    <div
+                      key={following.id}
+                      className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors cursor-pointer"
+                      onClick={() => {
+                        setShowFollowingsModal(false);
+                        navigate(`/user/${following.id}`);
+                      }}
+                    >
+                      <img
+                        src={
+                          following.profilePictureUri ??
+                          "/default-profile-picture.jpg"
+                        }
+                        alt={following.userName}
+                        className="w-10 h-10 rounded-full object-cover mr-3"
+                      />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                          {following.userName}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                    You are not following anyone yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </section>

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 interface AuthStore {
   token: string | null;
