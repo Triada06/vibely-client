@@ -20,11 +20,14 @@ import {
 import NotificationDropdown from "../components/NotificationDropdown";
 
 import { useAuthStore } from "../store/authStore";
+import { useNotificationStore } from "../store/notificationStore";
 
 export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
   const [visible, setVisible] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState("light");
+  const { notifications, fetchNotifications } = useNotificationStore();
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -178,9 +181,14 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                   size="lg"
                 />
                 Notifications
+                {unreadCount > 0 && (
+                  <span className="ml-2 w-5 h-5 bg-[#E07A5F] dark:bg-[#4DD0E1] rounded-full text-white text-xs flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
               </NavLink>
             </li>
-          
+
             <li className="m-2">
               <NavLink
                 to="/uploadpost"

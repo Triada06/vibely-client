@@ -70,10 +70,10 @@ export default function NotificationDropdown() {
   } = useNotificationStore();
 
   useEffect(() => {
-    // For development, use mock data
-    // In production, this would be handled by the store
-    useNotificationStore.setState({ notifications: mockNotifications });
-  }, []);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

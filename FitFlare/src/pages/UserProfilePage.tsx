@@ -103,6 +103,7 @@ export default function UserProfilePage() {
     null
   );
   const [isFollowing, setIsFollowing] = useState(false);
+  const [hasSentRequest, setHasSentRequest] = useState(false);
   const [activeTab, setActiveTab] = useState<"posts" | "saved">("posts");
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [followings, setFollowings] = useState<Follower[]>([]);
@@ -163,6 +164,7 @@ export default function UserProfilePage() {
         const text = await response.text();
         if (!text) {
           setIsFollowing(false);
+          setHasSentRequest(false);
           return;
         }
         const data = JSON.parse(text);
@@ -170,6 +172,23 @@ export default function UserProfilePage() {
           (follower: Follower) => follower.id === currentUserProfile.id
         );
         setIsFollowing(isFollowed);
+
+        const requestResponse = await fetch(
+          `https://localhost:7014/api/notification/pending-follow-request/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (requestResponse.ok) {
+          const requestData = await requestResponse.json();
+          setHasSentRequest(requestData.hasPendingRequest);
+        } else {
+          console.error("Failed to check pending follow request");
+          setHasSentRequest(false);
+        }
       } catch (err) {
         console.error("Error checking follow status:", err);
       }
@@ -187,39 +206,75 @@ export default function UserProfilePage() {
   };
 
   const handleFollow = async () => {
-    if (!id || !token || !profile) return;
+    if (!id || !token || !profile || !currentUserProfile?.id) return;
 
-    const method = isFollowing ? "DELETE" : "POST";
-    const endpoint = `https://localhost:7014/api/follow/${id}`;
+    if (profile.isPrivate && !isFollowing && !hasSentRequest) {
+      const notificationData = {
+        notificationType: "FollowRequest",
+        addressedUserId: id,
+        triggeredUserId: currentUserProfile.id,
+        message: `${currentUserProfile.userName} requested to follow you.`,
+      };
 
-    try {
-      const response = await fetch(endpoint, {
-        method: method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to ${isFollowing ? "unfollow" : "follow"} user: ${errorText}`
+      try {
+        const response = await fetch(
+          "https://localhost:7014/api/notification",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(notificationData),
+          }
         );
-      }
 
-      setIsFollowing(!isFollowing);
-      setProfile((prevProfile) => {
-        if (!prevProfile) return null;
-        return {
-          ...prevProfile,
-          followersCount: isFollowing
-            ? prevProfile.followersCount - 1
-            : prevProfile.followersCount + 1,
-        };
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      console.error("Error following/unfollowing:", err);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to send follow request: ${errorText}`);
+        }
+
+        setHasSentRequest(true);
+        alert("Follow request sent!");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Error sending follow request:", err);
+      }
+    } else {
+      const method = isFollowing ? "DELETE" : "POST";
+      const endpoint = `https://localhost:7014/api/follow/${id}`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: method,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Failed to ${
+              isFollowing ? "unfollow" : "follow"
+            } user: ${errorText}`
+          );
+        }
+
+        setIsFollowing(!isFollowing);
+        setProfile((prevProfile) => {
+          if (!prevProfile) return null;
+          return {
+            ...prevProfile,
+            followersCount: isFollowing
+              ? prevProfile.followersCount - 1
+              : prevProfile.followersCount + 1,
+          };
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        console.error("Error following/unfollowing:", err);
+      }
     }
   };
 
@@ -242,7 +297,7 @@ export default function UserProfilePage() {
 
       const text = await response.text();
       if (!text) {
-        setFollowers([]); // Set to empty array if no data
+        setFollowers([]);
         return;
       }
       const data = JSON.parse(text);
@@ -273,7 +328,7 @@ export default function UserProfilePage() {
 
       const text = await response.text();
       if (!text) {
-        setFollowings([]); // Set to empty array if no data
+        setFollowings([]);
         return;
       }
       const data = JSON.parse(text);
@@ -293,6 +348,74 @@ export default function UserProfilePage() {
   const handleFollowingsClick = async () => {
     setShowFollowingsModal(true);
     await fetchFollowings();
+  };
+
+  const handleRemoveFollower = async (followerId: string) => {
+    if (!id || !token) return;
+    try {
+      const response = await fetch(
+        `https://localhost:7014/api/follow/${id}/followers/${followerId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to remove follower");
+      }
+
+      setProfile((prevProfile) => {
+        if (!prevProfile) return null;
+        return {
+          ...prevProfile,
+          followersCount: prevProfile.followersCount - 1,
+        };
+      });
+
+      setFollowers((prevFollowers) =>
+        prevFollowers.filter((follower) => follower.id !== followerId)
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error removing follower:", err);
+    }
+  };
+
+  const handleRemoveFollowing = async (followingId: string) => {
+    if (!id || !token) return;
+    try {
+      const response = await fetch(
+        `https://localhost:7014/api/follow/${id}/followings/${followingId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to remove following");
+      }
+
+      setProfile((prevProfile) => {
+        if (!prevProfile) return null;
+        return {
+          ...prevProfile,
+          followingCount: prevProfile.followingCount - 1,
+        };
+      });
+
+      setFollowings((prevFollowings) =>
+        prevFollowings.filter((following) => following.id !== followingId)
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error removing following:", err);
+    }
   };
 
   if (loading) {
@@ -359,7 +482,11 @@ export default function UserProfilePage() {
                       onClick={handleFollow}
                       className="px-4 py-1.5 dark:text-[#EAEAEA] bg-gray-200 dark:bg-gray-800 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
                     >
-                      {isFollowing ? "Following" : "Follow Request"}
+                      {isFollowing
+                        ? "Following"
+                        : hasSentRequest
+                        ? "Requested"
+                        : "Follow"}
                     </button>
                   ) : (
                     <button
@@ -621,25 +748,40 @@ export default function UserProfilePage() {
                   followers.map((follower) => (
                     <div
                       key={follower.id}
-                      className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors cursor-pointer"
-                      onClick={() => {
-                        setShowFollowersModal(false);
-                        navigate(`/user/${follower.id}`);
-                      }}
+                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors"
                     >
-                      <img
-                        src={
-                          follower.profilePictureUri ??
-                          "/default-profile-picture.jpg"
-                        }
-                        alt={follower.userName}
-                        className="w-10 h-10 rounded-full object-cover mr-3"
-                      />
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
-                          {follower.userName}
-                        </p>
+                      <div
+                        className="flex items-center cursor-pointer"
+                        onClick={() => {
+                          setShowFollowersModal(false);
+                          navigate(`/user/${follower.id}`);
+                        }}
+                      >
+                        <img
+                          src={
+                            follower.profilePictureUri ??
+                            "/default-profile-picture.jpg"
+                          }
+                          alt={follower.userName}
+                          className="w-10 h-10 rounded-full object-cover mr-3"
+                        />
+                        <div>
+                          <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                            {follower.userName}
+                          </p>
+                        </div>
                       </div>
+                      {isOwnProfile && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent modal closing
+                            handleRemoveFollower(follower.id);
+                          }}
+                          className="px-3 py-1 bg-red-500 text-white rounded-md text-sm font-semibold hover:bg-red-600 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   ))
                 ) : (
@@ -689,25 +831,40 @@ export default function UserProfilePage() {
                   followings.map((following) => (
                     <div
                       key={following.id}
-                      className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors cursor-pointer"
-                      onClick={() => {
-                        setShowFollowingsModal(false);
-                        navigate(`/user/${following.id}`);
-                      }}
+                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors"
                     >
-                      <img
-                        src={
-                          following.profilePictureUri ??
-                          "/default-profile-picture.jpg"
-                        }
-                        alt={following.userName}
-                        className="w-10 h-10 rounded-full object-cover mr-3"
-                      />
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
-                          {following.userName}
-                        </p>
+                      <div
+                        className="flex items-center cursor-pointer"
+                        onClick={() => {
+                          setShowFollowingsModal(false);
+                          navigate(`/user/${following.id}`);
+                        }}
+                      >
+                        <img
+                          src={
+                            following.profilePictureUri ??
+                            "/default-profile-picture.jpg"
+                          }
+                          alt={following.userName}
+                          className="w-10 h-10 rounded-full object-cover mr-3"
+                        />
+                        <div>
+                          <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                            {following.userName}
+                          </p>
+                        </div>
                       </div>
+                      {isOwnProfile && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent modal closing
+                            handleRemoveFollowing(following.id);
+                          }}
+                          className="px-3 py-1 bg-red-500 text-white rounded-md text-sm font-semibold hover:bg-red-600 transition-colors"
+                        >
+                          Unfollow
+                        </button>
+                      )}
                     </div>
                   ))
                 ) : (

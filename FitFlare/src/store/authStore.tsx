@@ -6,6 +6,7 @@ interface AuthStore {
   isLoading: boolean;
   isAuthenticated: boolean;
   role: string | null;
+  userId: string | null;
   setToken: (token: string) => void;
   logout: () => void;
   checkAuth: () => void;
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
   isLoading: true,
   role: null,
+  userId: null,
 
   setToken: (token: string) => {
     const decoded = jwtDecode<JwtPayload>(token);
@@ -35,18 +37,23 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
     localStorage.setItem("token", token);
 
-    set({ token, role });
+    set({ token, role, userId: decoded.sub });
   },
 
   logout: () => {
     localStorage.removeItem("token");
-    set({ token: null, isAuthenticated: false, role: null });
+    set({ token: null, isAuthenticated: false, role: null, userId: null });
   },
 
   checkAuth: () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      set({ isAuthenticated: false, isLoading: false, role: null });
+      set({
+        isAuthenticated: false,
+        isLoading: false,
+        role: null,
+        userId: null,
+      });
       return;
     }
 
@@ -56,12 +63,28 @@ export const useAuthStore = create<AuthStore>((set) => ({
       const role = Array.isArray(decoded.role) ? decoded.role[0] : decoded.role;
 
       if (Date.now() < exp) {
-        set({ token, isAuthenticated: true, isLoading: false, role });
+        set({
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          role,
+          userId: decoded.sub,
+        });
       } else {
-        set({ isAuthenticated: false, isLoading: false, role: null });
+        set({
+          isAuthenticated: false,
+          isLoading: false,
+          role: null,
+          userId: null,
+        });
       }
     } catch {
-      set({ isAuthenticated: false, isLoading: false, role: null });
+      set({
+        isAuthenticated: false,
+        isLoading: false,
+        role: null,
+        userId: null,
+      });
     }
   },
   initAuth: () => {

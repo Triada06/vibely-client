@@ -1,14 +1,15 @@
 import { create } from "zustand";
 
-export type NotificationType = "LIKE" | "FOLLOW" | "FOLLOW_REQUEST";
+export type NotificationType = "FollowRequest" | "Follow" | "Like" | "Comment";
 
-export interface Notification {
+export interface NotificationData {
   id: string;
   type: NotificationType;
+  addressedUserId: string;
   message: string;
-  userId: string;
-  userName: string;
-  userProfilePicture: string | null;
+  triggerUserName: string;
+  triggerUserProfilePicture: string | null;
+  triggerUserId: string;
   postId?: string;
   postMediaUri?: string;
   createdAt: string;
@@ -16,29 +17,21 @@ export interface Notification {
 }
 
 interface NotificationStore {
-  notifications: Notification[];
-  unreadCount: number;
-  isLoading: boolean;
-  error: string | null;
+  notifications: NotificationData[];
   fetchNotifications: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
-  addNotification: (notification: Notification) => void;
 }
 
-export const useNotificationStore = create<NotificationStore>((set, get) => ({
+export const useNotificationStore = create<NotificationStore>((set) => ({
   notifications: [],
-  unreadCount: 0,
-  isLoading: false,
-  error: null,
 
   fetchNotifications: async () => {
-    const { token } = useAuthStore.getState();
-    if (!token) return;
-
-    set({ isLoading: true, error: null });
     try {
-      const response = await fetch("https://localhost:7014/api/notifications", {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch("https://localhost:7014/api/notification", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -49,24 +42,21 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       }
 
       const data = await response.json();
-      const unreadCount = data.filter((n: Notification) => !n.isRead).length;
-      set({ notifications: data, unreadCount });
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "An error occurred" });
-    } finally {
-      set({ isLoading: false });
+      set({ notifications: data });
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
     }
   },
 
   markAsRead: async (notificationId: string) => {
-    const { token } = useAuthStore.getState();
-    if (!token) return;
-
     try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
       const response = await fetch(
-        `https://localhost:7014/api/notifications/${notificationId}/read`,
+        `https://localhost:7014/api/notification/${notificationId}/markasread`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -81,22 +71,21 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         notifications: state.notifications.map((n) =>
           n.id === notificationId ? { ...n, isRead: true } : n
         ),
-        unreadCount: state.unreadCount - 1,
       }));
-    } catch (err) {
-      console.error("Error marking notification as read:", err);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
     }
   },
 
   markAllAsRead: async () => {
-    const { token } = useAuthStore.getState();
-    if (!token) return;
-
     try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
       const response = await fetch(
-        "https://localhost:7014/api/notifications/read-all",
+        "https://localhost:7014/api/notification/markallasread",
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -109,17 +98,9 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
       set((state) => ({
         notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
-        unreadCount: 0,
       }));
-    } catch (err) {
-      console.error("Error marking all notifications as read:", err);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
     }
-  },
-
-  addNotification: (notification: Notification) => {
-    set((state) => ({
-      notifications: [notification, ...state.notifications],
-      unreadCount: state.unreadCount + 1,
-    }));
   },
 }));
