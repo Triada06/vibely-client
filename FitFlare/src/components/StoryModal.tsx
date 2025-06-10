@@ -5,8 +5,10 @@ import {
   faChevronRight,
   faXmark,
   faTrash,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
+import { useNavigate } from "react-router-dom";
 
 export interface StoryItem {
   id: string;
@@ -36,7 +38,11 @@ const StoryModal: React.FC<StoryModalProps> = ({
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [mediaLoading, setMediaLoading] = useState(true);
+  const [viewers, setViewers] = useState<any[]>([]);
+  const [loadingViewers, setLoadingViewers] = useState(false);
+  const [showViewersModal, setShowViewersModal] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -53,6 +59,46 @@ const StoryModal: React.FC<StoryModalProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, currentIndex, mediaLoading]);
+
+  // Fetch viewers when opening your own story (for count)
+  useEffect(() => {
+    if (!isOpen || stories.length === 0) return;
+    const currentStory = stories[currentIndex];
+    if (!currentUserId || currentStory.authorId !== currentUserId) {
+      setViewers([]);
+      return;
+    }
+    // Only fetch if not already loaded for this story
+    setLoadingViewers(true);
+    const token = localStorage.getItem("token");
+    fetch(`https://localhost:7014/api/story/${currentStory.id}/viewers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setViewers(data))
+      .catch(() => setViewers([]))
+      .finally(() => setLoadingViewers(false));
+  }, [isOpen, currentIndex, currentUserId, stories]);
+
+  // Mark as viewed if not your own story
+  useEffect(() => {
+    const markAsViewed = async () => {
+      if (!isOpen || stories.length === 0) return;
+      const currentStory = stories[currentIndex];
+      if (!currentUserId || currentStory.authorId === currentUserId) return;
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(
+          `https://localhost:7014/api/story/${currentStory.id}/view`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      } catch {}
+    };
+    markAsViewed();
+  }, [isOpen, currentIndex, currentUserId, stories]);
 
   if (!isOpen || stories.length === 0) return null;
 
@@ -110,7 +156,7 @@ const StoryModal: React.FC<StoryModalProps> = ({
         {currentUserId && currentStory.authorId === currentUserId && (
           <>
             <button
-              className="text-white/80 hover:text-red-500 p-2 rounded-full transition-colors bg-black/70 dark:bg-zinc-800 shadow-lg border border-zinc-700"
+              className="dark:text-white/80 text-black/80 hover:text-red-500 p-2 rounded-full transition-colors bg-black/70 dark:bg-zinc-800 shadow-lg border border-zinc-700"
               onClick={() => setShowDeleteConfirm(true)}
               title="Delete story"
               style={{ background: "none", border: "none" }}
@@ -122,7 +168,7 @@ const StoryModal: React.FC<StoryModalProps> = ({
                 <span className="text-white mb-2">Delete this story?</span>
                 <div className="flex gap-2">
                   <button
-                    className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm"
+                    className="px-3 py-1 rounded bg-red-600 dark:text-white text-black hover:bg-red-700 text-sm"
                     onClick={handleDelete}
                     disabled={deleting}
                   >
@@ -179,17 +225,9 @@ const StoryModal: React.FC<StoryModalProps> = ({
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <video
-                    src={currentStory.mediaSasUrl}
-                    className="w-full h-full object-cover rounded-2xl"
-                    style={{
-                      objectPosition: "center",
-                      display: mediaLoading ? "none" : undefined,
-                    }}
-                    onLoadedData={() => setMediaLoading(false)}
-                    controls
-                    playsInline
-                  />
+                  {!mediaLoading && (
+                    <ReelPlayer src={currentStory.mediaSasUrl} />
+                  )}
                 </div>
               )}
             </div>
@@ -202,8 +240,94 @@ const StoryModal: React.FC<StoryModalProps> = ({
               </button>
             )}
           </div>
+          {/* Viewers button for your own story */}
+          {currentUserId && currentStory.authorId === currentUserId && (
+            <div className="w-full mt-4 flex justify-end">
+              <button
+                className="flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-sm font-medium shadow border border-zinc-200 dark:border-zinc-700"
+                onClick={() => setShowViewersModal(true)}
+                disabled={showViewersModal}
+              >
+                <FontAwesomeIcon icon={faEye} />
+                Viewers
+                {viewers.length > 0 && (
+                  <span className="ml-1 bg-zinc-300 dark:bg-zinc-700 rounded-full px-2 py-0.5 text-xs font-semibold">
+                    {viewers.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Viewers Modal */}
+      {showViewersModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="relative bg-white dark:bg-[#262626] rounded-xl shadow-xl w-full max-w-sm max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Story Viewers
+              </h3>
+              <button
+                onClick={() => setShowViewersModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+              >
+                <span className="sr-only">Close</span>
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-grow">
+              {loadingViewers ? (
+                <div className="flex justify-center items-center p-6">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                </div>
+              ) : viewers.length > 0 ? (
+                viewers.map((viewer) => (
+                  <div
+                    key={viewer.id}
+                    className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-[#333333] transition-colors cursor-pointer"
+                    onClick={() => {
+                      setShowViewersModal(false);
+                      navigate(`/user/${viewer.id}`);
+                    }}
+                  >
+                    <img
+                      src={
+                        viewer.profilePictureUri ||
+                        "/default-profile-picture.jpg"
+                      }
+                      alt={viewer.userName}
+                      className="w-10 h-10 rounded-full object-cover mr-3"
+                    />
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                        {viewer.userName}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                  No viewers yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

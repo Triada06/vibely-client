@@ -51,6 +51,10 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
     document.documentElement.classList.toggle("dark", stored === "dark");
   }, []);
 
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);

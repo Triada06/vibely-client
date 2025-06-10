@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import "../App.css";
 import CardComponent from "../components/CardComponent";
 import PostModal, {
@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import StoryModal, { StoryItem } from "../components/StoryModal";
+import { useNavigate } from "react-router-dom";
 
 // Move videoRefs outside component to prevent re-creation on re-renders
 const videoRefs = new Map<string, HTMLVideoElement>();
@@ -59,7 +60,7 @@ export default function HomePage() {
   const [storyModalOpen, setStoryModalOpen] = useState(false);
   const [storyModalStories, setStoryModalStories] = useState<StoryItem[]>([]);
   const [storyModalInitialIndex, setStoryModalInitialIndex] = useState(0);
-  const [storyLoading, setStoryLoading] = useState(false);
+  const navigate = useNavigate();
 
   const checkScroll = () => {
     const el = scrollContainerRef.current;
@@ -374,7 +375,6 @@ export default function HomePage() {
     authorId: string,
     initialIndex: number = 0
   ) => {
-    setStoryLoading(true);
     try {
       let userStories: StoryItem[] = [];
       if (profile && authorId === profile.id) {
@@ -407,10 +407,25 @@ export default function HomePage() {
       setStoryModalOpen(true);
     } catch (error) {
       console.error("Error opening story modal:", error);
-    } finally {
-      setStoryLoading(false);
     }
   };
+
+  // Group stories by authorId for rendering story circles
+  const groupedStories = useMemo(() => {
+    const map = new Map();
+    for (const story of stories) {
+      if (!map.has(story.authorId)) {
+        map.set(story.authorId, {
+          authorId: story.authorId,
+          authorProfilePicture: story.authorProfilePicture,
+          stories: [story],
+        });
+      } else {
+        map.get(story.authorId).stories.push(story);
+      }
+    }
+    return Array.from(map.values());
+  }, [stories]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -434,7 +449,13 @@ export default function HomePage() {
               <li
                 key="my-story"
                 className="shrink-0 snap-start hover:cursor-pointer"
-                onClick={() => handleStoryClick(profile.id)}
+                onClick={() => {
+                  if (hasMyStory) {
+                    handleStoryClick(profile.id);
+                  } else {
+                    navigate("/uploadpost?tab=story");
+                  }
+                }}
               >
                 <div
                   className={`rounded-4xl size-14 flex items-center justify-center ${
@@ -452,17 +473,18 @@ export default function HomePage() {
                 </div>
               </li>
             )}
-            {stories.map((story, idx) => (
+            {/* Render grouped story circles */}
+            {groupedStories.map((group) => (
               <li
-                key={story.id}
+                key={group.authorId}
                 className="shrink-0 snap-start hover:cursor-pointer"
-                onClick={() => handleStoryClick(story.authorId)}
+                onClick={() => handleStoryClick(group.authorId)}
               >
                 <div className="bg-gradient-to-r from-amber-500 to-pink-500 dark:from-indigo-900 dark:to-green-900 rounded-4xl size-14 flex items-center justify-center">
                   <img
                     className="rounded-3xl size-12 object-cover select-none "
-                    src={story.authorProfilePicture}
-                    alt={`story-profile-${story.id}`}
+                    src={group.authorProfilePicture}
+                    alt={`story-profile-${group.authorId}`}
                     draggable="false"
                   />
                 </div>
@@ -625,12 +647,6 @@ export default function HomePage() {
         onClose={() => setStoryModalOpen(false)}
         currentUserId={profile?.id}
       />
-
-      {storyLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent border-solid rounded-full animate-spin"></div>
-        </div>
-      )}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import type {
   SavedPost,
   Profile,
 } from "../components/PostModal";
+import StoryModal, { StoryItem } from "../components/StoryModal";
 
 interface ProfileData {
   isPrivate: boolean;
@@ -51,6 +52,9 @@ export default function ProfilePage() {
   const [showFollowingsModal, setShowFollowingsModal] = useState(false);
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [loadingFollowings, setLoadingFollowings] = useState(false);
+  const [profileStories, setProfileStories] = useState<StoryItem[]>([]);
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [storyModalInitialIndex, setStoryModalInitialIndex] = useState(0);
 
   const { profile, fetchUser } = useProfileStore();
   const { token } = useAuthStore();
@@ -59,6 +63,25 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchUser();
   }, []);
+
+  // Fetch stories for this profile
+  useEffect(() => {
+    const fetchStories = async () => {
+      if (!profile?.id || !token) return;
+      try {
+        const response = await fetch(
+          `https://localhost:7014/api/appuser/${profile.id}/stories`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        setProfileStories(data);
+      } catch {}
+    };
+    fetchStories();
+  }, [profile?.id, token]);
 
   const handlePostClick = (index: number) => {
     setSelectedPostIndex(index);
@@ -140,16 +163,43 @@ export default function ProfilePage() {
     await fetchFollowings();
   };
 
+  // Handler for profile picture click
+  const handleProfilePicClick = () => {
+    if (profile?.id === profile?.id && profileStories.length > 0) {
+      setStoryModalOpen(true);
+      setStoryModalInitialIndex(0);
+    } else if (profile?.id === profile?.id) {
+      navigate("/uploadpost?tab=story");
+    }
+  };
+
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8  pb-20 h-full min-h-screen">
       <div className="flex flex-col h-full">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 py-8">
           <div className="md:flex-shrink-0">
-            <img
-              className="rounded-full w-32 h-32 md:w-40 md:h-40 object-cover"
-              src={profile?.profilePictureUri ?? "/default-profile-picture.jpg"}
-              alt="profile"
-            />
+            <div
+              className={`size-40 flex items-center justify-center relative`}
+              style={{ cursor: "pointer" }}
+              onClick={handleProfilePicClick}
+            >
+              {profileStories.length > 0 ? (
+                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-pink-500 dark:from-indigo-900 dark:to-green-900"></span>
+              ) : null}
+              <div
+                className={`rounded-full size-36 flex items-center justify-center bg-white dark:bg-[#1C1C1E] z-10 ${
+                  profileStories.length > 0 ? "relative" : ""
+                }`}
+              >
+                <img
+                  className="rounded-full size-36 object-cover"
+                  src={
+                    profile?.profilePictureUri ?? "/default-profile-picture.jpg"
+                  }
+                  alt="profile"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-6 flex-grow">
@@ -496,6 +546,15 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+
+        {/* Story Modal for profile */}
+        <StoryModal
+          stories={profileStories}
+          initialIndex={storyModalInitialIndex}
+          isOpen={storyModalOpen}
+          onClose={() => setStoryModalOpen(false)}
+          currentUserId={profile?.id}
+        />
       </div>
     </section>
   );

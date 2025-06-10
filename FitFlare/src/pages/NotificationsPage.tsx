@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useNotificationStore,
@@ -24,10 +24,45 @@ export default function NotificationsPage() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [profileForModal, setProfileForModal] = useState<Profile | null>(null);
+  const [postDetails, setPostDetails] = useState<
+    Record<string, { mediaType: string; mediaUri: string }>
+  >({});
+  const postDetailsFetched = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  // Fetch post details for notifications with postId
+  useEffect(() => {
+    const fetchDetails = async () => {
+      const toFetch = notifications.filter(
+        (n) => n.postId && !postDetailsFetched.current[n.postId]
+      );
+      for (const n of toFetch) {
+        try {
+          const response = await fetch(
+            `https://localhost:7014/api/post/${n.postId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            setPostDetails((prev) => ({
+              ...prev,
+              [n.postId!]: {
+                mediaType: data.mediaType,
+                mediaUri: data.mediaUri,
+              },
+            }));
+            postDetailsFetched.current[n.postId!] = true;
+          }
+        } catch {}
+      }
+    };
+    if (token && notifications.length > 0) fetchDetails();
+  }, [notifications, token]);
 
   const handleNotificationClick = async (notification: NotificationData) => {
     if (!notification.isRead) {
@@ -270,13 +305,25 @@ export default function NotificationsPage() {
                 </div>
                 {(notification.type === "Like" ||
                   notification.type === "Comment") &&
-                  notification.postMediaUri && (
+                  notification.postId &&
+                  postDetails[notification.postId] &&
+                  (postDetails[notification.postId].mediaType === "video" ? (
+                    <video
+                      src={postDetails[notification.postId].mediaUri}
+                      className="w-12 h-12 object-cover rounded"
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      style={{ background: "#000" }}
+                    />
+                  ) : (
                     <img
-                      src={notification.postMediaUri}
+                      src={postDetails[notification.postId].mediaUri}
                       alt="Post thumbnail"
                       className="w-12 h-12 object-cover rounded"
                     />
-                  )}
+                  ))}
                 {notification.type === "FollowRequest" && (
                   <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
                     <button
