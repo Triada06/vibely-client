@@ -1,14 +1,21 @@
 import { faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 interface ReelPlayerProps {
   src: string;
+  initialTime?: number;
 }
 
-const ReelPlayer: React.FC<ReelPlayerProps> = ({ src }) => {
+const ReelPlayer: React.FC<ReelPlayerProps> = ({ src, initialTime }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    if (videoRef.current && initialTime !== undefined) {
+      videoRef.current.currentTime = initialTime;
+    }
+  }, [initialTime]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -29,7 +36,6 @@ const ReelPlayer: React.FC<ReelPlayerProps> = ({ src }) => {
       <video
         ref={videoRef}
         src={src}
-        autoPlay
         loop
         playsInline
         className="w-full h-full object-cover cursor-pointer"

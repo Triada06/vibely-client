@@ -14,8 +14,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import ReelPlayer from "./VideoPlayer";
 import EditPostModal from "./EditPostModal";
-import { useAuthStore } from "../store/authStore"; 
-import { useProfileStore } from "../store/profileStore"; 
+import { useAuthStore } from "../store/authStore";
+import { useProfileStore } from "../store/profileStore";
 
 export interface CommentUser {
   commenterName: string;
@@ -85,6 +85,7 @@ interface PostModalProps {
   setSavedPosts: (posts: SavedPost[]) => void;
   isOwnProfile?: boolean;
   isSavedPostsTab?: boolean;
+  initialVideoTime?: number;
 }
 
 export default function PostModal({
@@ -97,6 +98,7 @@ export default function PostModal({
   setSavedPosts,
   isOwnProfile = false,
   isSavedPostsTab = false,
+  initialVideoTime,
 }: PostModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialPostIndex);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -990,7 +992,10 @@ export default function PostModal({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <ReelPlayer src={currentPost.mediaUri} />
+              <ReelPlayer
+                src={currentPost.mediaUri}
+                initialTime={initialVideoTime}
+              />
             </div>
           )}
 
