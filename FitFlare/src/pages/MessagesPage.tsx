@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  startConnection,
+  sendMessage,
+  checkUsersOnline,
+} from "../helpers/chatHub";
+import { useAuthStore } from "../store/authStore";
+import { useProfileStore } from "../store/profileStore";
 
 interface Message {
   id: string;
@@ -27,55 +35,127 @@ export default function MessagesPage() {
     string | null
   >(null);
   const [messageInput, setMessageInput] = useState("");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const location = useLocation();
   const isMessagesPage = location.pathname.startsWith("/messages");
 
-  // Mock data - replace with actual data from your backend
-  const conversations: Conversation[] = [
-    {
-      id: "1",
-      userId: "user1",
-      username: "john_doe",
-      profilePicture: "/default-profile-picture.jpg",
-      lastMessage: "Hey, how are you?",
-      lastMessageTime: "2m",
-      unreadCount: 2,
-      isOnline: true,
-    },
-    {
-      id: "2",
-      userId: "user2",
-      username: "jane_smith",
-      profilePicture: "/default-profile-picture.jpg",
-      lastMessage: "See you tomorrow!",
-      lastMessageTime: "1h",
-      unreadCount: 0,
-      isOnline: false,
-    },
-  ];
+  const { profile, fetchUser } = useProfileStore();
 
-  const messages: Message[] = [
-    {
-      id: "1",
-      senderId: "user1",
-      content: "Hey, how are you?",
-      timestamp: "2:30 PM",
-      isRead: true,
-    },
-    {
-      id: "2",
-      senderId: "currentUser",
-      content: "I'm good, thanks! How about you?",
-      timestamp: "2:31 PM",
-      isRead: true,
-    },
-  ];
+  const fetchChats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("https://localhost:7014/api/chat", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch chats");
+      }
+
+      const data = await response.json();
+      const mappedConversations: Conversation[] = data.map((chat: any) => ({
+        id: chat.id,
+        userId: chat.id,
+        username: chat.fullNameOrUserName,
+        profilePicture: chat.chatPicture || "/default-profile-picture.jpg",
+        lastMessage: chat.lastMessage || "",
+        lastMessageTime: chat.lastMessageTime || "",
+        unreadCount: 0,
+        isOnline: false,
+      }));
+
+      setConversations(mappedConversations);
+
+      // Check online status for all users
+      const userIds = mappedConversations.map((conv) => conv.userId);
+      const onlineUserIds = await checkUsersOnline(userIds);
+      setOnlineUsers(new Set(onlineUserIds));
+
+      // Update online status in conversations
+      setConversations((prev) =>
+        prev.map((conv) => ({
+          ...conv,
+          isOnline: onlineUserIds.includes(conv.userId),
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+    fetchChats();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      startConnection(token, {
+        onReceiveMessage: (message) => {
+          if (
+            message.senderId === selectedConversation ||
+            message.senderId === profile?.id
+          ) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                senderId: message.senderId,
+                content: message.content,
+                timestamp: message.timestamp.toLocaleTimeString(),
+                isRead: true,
+              },
+            ]);
+
+            // Update last message in conversations
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv.id === message.senderId
+                  ? {
+                      ...conv,
+                      lastMessage: message.content,
+                      lastMessageTime: message.timestamp.toLocaleTimeString(),
+                    }
+                  : conv
+              )
+            );
+          }
+        },
+        onUserConnected: (userId) => {
+          setOnlineUsers((prev) => new Set([...prev, userId]));
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.userId === userId ? { ...conv, isOnline: true } : conv
+            )
+          );
+        },
+        onUserDisconnected: (userId) => {
+          setOnlineUsers((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(userId);
+            return newSet;
+          });
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.userId === userId ? { ...conv, isOnline: false } : conv
+            )
+          );
+        },
+      });
+    }
+  }, [selectedConversation, profile?.id]);
 
   const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // Add message sending logic here
-      setMessageInput("");
-    }
+    if (!messageInput.trim() || !selectedConversation) return;
+
+    sendMessage(selectedConversation, messageInput);
+    setMessageInput("");
   };
 
   const mainMargin = isMessagesPage ? "md:ml-20" : "md:ml-72";
@@ -190,14 +270,14 @@ export default function MessagesPage() {
                   <div
                     key={message.id}
                     className={`flex ${
-                      message.senderId === "currentUser"
+                      message.senderId === profile?.id
                         ? "justify-end"
                         : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        message.senderId === "currentUser"
+                        message.senderId === profile?.id
                           ? "bg-blue-500 text-white"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                       }`}
