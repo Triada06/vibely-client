@@ -300,20 +300,37 @@ layer(base);
 
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
-    @apply size-1.5;
+    width: 8px;
   }
 
   &::-webkit-scrollbar-track {
-    @apply rounded-full;
+    background: transparent;
   }
 
   &::-webkit-scrollbar-thumb {
-    @apply bg-gray-200 rounded-full dark:bg-gray-700;
+    background-color: rgba(156, 163, 175, 0.5); /* gray-400 with opacity */
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7); /* darker gray on hover */
   }
 }
 
+/* Dark mode adjustments for custom scrollbar */
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #344054;
+  background-color: rgba(75, 85, 99, 0.5); /* dark gray-600 with opacity */
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(
+    75,
+    85,
+    99,
+    0.7
+  ); /* darker gray on hover for dark mode */
 }
 
 @layer utilities {

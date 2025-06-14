@@ -1064,7 +1064,7 @@ export default function PostModal({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 min-h-[100px]">
+          <div className="flex-1 overflow-y-auto p-4 min-h-[100px] custom-scrollbar">
             {renderCommentsSection()}
           </div>
 
@@ -1180,7 +1180,7 @@ export default function PostModal({
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-2">
+            <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
               {renderCommentsSection()}
             </div>
 

@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import {
   startConnection,
   sendMessage,
@@ -38,10 +37,77 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isMessagesPage = location.pathname.startsWith("/messages");
 
   const { profile, fetchUser } = useProfileStore();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInSeconds < 60) {
+      return "Just now";
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else if (diffInDays < 7) {
+      return `${diffInDays}d ago`;
+    } else {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      });
+    }
+  };
+
+  const fetchChatMessages = async (userId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `https://localhost:7014/api/chat/with/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch chat messages");
+      }
+
+      const data = await response.json();
+      const mappedMessages: Message[] = data.map((msg: any) => ({
+        id: msg.id,
+        senderId: msg.senderId,
+        content: msg.encryptedContent,
+        timestamp: msg.sentAt,
+        isRead: true,
+      }));
+
+      setMessages(mappedMessages);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+    }
+  };
 
   const fetchChats = async () => {
     try {
@@ -93,6 +159,12 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
+    if (selectedConversation) {
+      fetchChatMessages(selectedConversation);
+    }
+  }, [selectedConversation]);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
 
     if (token) {
@@ -102,16 +174,25 @@ export default function MessagesPage() {
             message.senderId === selectedConversation ||
             message.senderId === profile?.id
           ) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                senderId: message.senderId,
-                content: message.content,
-                timestamp: message.timestamp.toLocaleTimeString(),
-                isRead: true,
-              },
-            ]);
+            const fullMessage: Message = {
+              ...message,
+              id: crypto.randomUUID(), // generate a unique ID
+              isRead: false,
+              timestamp: new Date(message.timestamp).toISOString(),
+            };
+
+            setMessages((prev) => {
+              const alreadyExists = prev.some(
+                (msg) =>
+                  msg.content === fullMessage.content &&
+                  msg.timestamp === fullMessage.timestamp &&
+                  msg.senderId === fullMessage.senderId
+              );
+
+              if (alreadyExists) return prev;
+
+              return [...prev, fullMessage];
+            });
 
             // Update last message in conversations
             setConversations((prev) =>
@@ -120,7 +201,9 @@ export default function MessagesPage() {
                   ? {
                       ...conv,
                       lastMessage: message.content,
-                      lastMessageTime: message.timestamp.toLocaleTimeString(),
+                      lastMessageTime: formatTimestamp(
+                        message.timestamp.toString()
+                      ),
                     }
                   : conv
               )
@@ -242,14 +325,20 @@ export default function MessagesPage() {
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={
-                      conversations.find((c) => c.id === selectedConversation)
-                        ?.profilePicture
-                    }
-                    alt=""
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
+                  <div className="relative">
+                    <img
+                      src={
+                        conversations.find((c) => c.id === selectedConversation)
+                          ?.profilePicture
+                      }
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    {conversations.find((c) => c.id === selectedConversation)
+                      ?.isOnline && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                    )}
+                  </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                       {
@@ -258,14 +347,17 @@ export default function MessagesPage() {
                       }
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Active now
+                      {conversations.find((c) => c.id === selectedConversation)
+                        ?.isOnline
+                        ? "Active now"
+                        : "Offline"}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -284,11 +376,12 @@ export default function MessagesPage() {
                     >
                       <p>{message.content}</p>
                       <span className="text-xs opacity-70 mt-1 block">
-                        {message.timestamp}
+                        {formatTimestamp(message.timestamp)}
                       </span>
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}

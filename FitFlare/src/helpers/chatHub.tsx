@@ -2,14 +2,14 @@ import * as signalR from "@microsoft/signalr";
 
 let connection: signalR.HubConnection | null = null;
 
-interface Message {
+interface HubMessage  {
   senderId: string;
   content: string;
   timestamp: Date;
 }
 
 interface ChatHubCallbacks {
-  onReceiveMessage: (message: Message) => void;
+  onReceiveMessage: (message: HubMessage ) => void;
   onUserConnected: (userId: string) => void;
   onUserDisconnected: (userId: string) => void;
 }

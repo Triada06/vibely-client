@@ -175,7 +175,7 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                         isMessagesPage &&
                         !isHovered && (
                           <span
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-[#4DD0E1] text-white text-xs flex items-center justify-center rounded-full border-2 border-[#2A2A2D] dark:border-[#2A2A2D]"
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-[#E07A5F] dark:bg-[#4DD0E1] text-white text-xs flex items-center justify-center rounded-full border-2 border-none"
                             style={{ fontSize: "0.75rem" }}
                           >
                             {item.badge}
