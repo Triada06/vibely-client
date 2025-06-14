@@ -12,6 +12,7 @@ import {
   faPlus,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
 import ReelPlayer from "./VideoPlayer";
 import EditPostModal from "./EditPostModal";
 import { useAuthStore } from "../store/authStore";
@@ -123,6 +124,7 @@ export default function PostModal({
     {}
   );
   const [comments, setComments] = useState<Comment[]>([]);
+  const navigate = useNavigate();
 
   const currentPost = posts[currentIndex];
 
@@ -784,6 +786,16 @@ export default function PostModal({
     return profile.posts.some((post) => post.id === currentPost.id);
   };
 
+  const handleUserClick = (authorId: string) => {
+    const authUserId = useAuthStore.getState().userId;
+    if (authorId === authUserId) {
+      navigate("/profile");
+    } else {
+      navigate(`/user/${authorId}`);
+    }
+    onClose(); // Close the modal after navigation
+  };
+
   const renderComment = (comment: Comment, isReply = false) => {
     // Get the userId from profileStore
     const userId = useProfileStore.getState().profile?.id;
@@ -1030,7 +1042,10 @@ export default function PostModal({
 
         <div className="hidden md:flex w-96 flex-col border-l border-gray-200 dark:bg-[#1C1C1E] max-h-[90vh]">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex gap-3 items-center">
+            <div
+              className="flex gap-3 items-center cursor-pointer"
+              onClick={() => handleUserClick(currentPost.postedById)}
+            >
               <img
                 src={
                   currentPost.authorProfilePicUri ??
@@ -1140,23 +1155,28 @@ export default function PostModal({
           >
             {/* Header */}
             <div className="relative border-b border-gray-200 dark:border-gray-700 p-4 flex items-center">
-              <img
-                src={
-                  currentPost.authorProfilePicUri ??
-                  "/default-profile-picture.jpg"
-                }
-                alt="User avatar"
-                className="w-8 h-8 rounded-full object-cover mr-3"
-              />
-              <div className="flex flex-col flex-1">
-                <span className="font-semibold dark:text-white">
-                  {currentPost.authorUserName}
-                </span>
-                {currentPost.postedWhen && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatPostedWhen(currentPost.postedWhen)}
+              <div
+                className="flex flex-1 items-center cursor-pointer"
+                onClick={() => handleUserClick(currentPost.postedById)}
+              >
+                <img
+                  src={
+                    currentPost.authorProfilePicUri ??
+                    "/default-profile-picture.jpg"
+                  }
+                  alt="User avatar"
+                  className="w-8 h-8 rounded-full object-cover mr-3"
+                />
+                <div className="flex flex-col">
+                  <span className="font-semibold dark:text-white">
+                    {currentPost.authorUserName}
                   </span>
-                )}
+                  {currentPost.postedWhen && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatPostedWhen(currentPost.postedWhen)}
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 className="absolute top-4 right-4 text-gray-500 dark:text-gray-400"

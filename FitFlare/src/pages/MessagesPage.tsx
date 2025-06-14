@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faSearch } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPaperPlane,
+  faSearch,
+  faTrash,
+  faArrowLeft,
+} from "@fortawesome/free-solid-svg-icons";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   startConnection,
@@ -27,6 +32,7 @@ interface Conversation {
   lastMessageTime: string;
   unreadCount: number;
   isOnline: boolean;
+  firstMatchedMessageId?: string;
 }
 
 export default function MessagesPage() {
@@ -42,6 +48,31 @@ export default function MessagesPage() {
   const isMessagesPage = location.pathname.startsWith("/messages");
 
   const { profile, fetchUser } = useProfileStore();
+  const authUserId = useAuthStore((state) => state.userId); // Get auth user ID
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Conversation[]>([]);
+  const [messageToScrollToId, setMessageToScrollToId] = useState<string | null>(
+    null
+  );
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
+
+  // Debounce for search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchQuery.trim() !== "") {
+        searchMessages(searchQuery.trim());
+      } else {
+        setSearchResults([]); // Clear search results if query is empty
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery, authUserId]); // Depend on authUserId for mapping search results
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,6 +81,24 @@ export default function MessagesPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Effect to scroll to a specific message if messageToScrollToId is set
+  useEffect(() => {
+    if (messageToScrollToId && messages.length > 0) {
+      const messageElement = document.getElementById(
+        `message-${messageToScrollToId}`
+      );
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightedMessageId(messageToScrollToId); // Set highlight
+        const timer = setTimeout(() => {
+          setHighlightedMessageId(null); // Remove highlight after 2 seconds
+        }, 2000);
+        setMessageToScrollToId(null); // Clear the ID after scrolling
+        return () => clearTimeout(timer); // Cleanup timeout
+      }
+    }
+  }, [messageToScrollToId, messages]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -75,6 +124,63 @@ export default function MessagesPage() {
         minute: "numeric",
         hour12: true,
       });
+    }
+  };
+
+  const searchMessages = async (text: string) => {
+    if (!text) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://localhost:7014/api/message?searchText=${encodeURIComponent(
+          text
+        )}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to search messages");
+      }
+
+      const data = await response.json();
+      // Map search results to Conversation-like objects
+      const mappedResults: Conversation[] = data.map((result: any) => {
+        // Determine the other user's ID in the conversation
+        const otherUserId =
+          result.senderId === authUserId ? result.receiverId : result.senderId;
+
+        return {
+          id: otherUserId, // Use the other user's ID as conversation ID
+          userId: otherUserId,
+          username: result.chatName,
+          profilePicture:
+            result.chatPictureSasUri || "/default-profile-picture.jpg",
+          lastMessage: "Message matched in search", // Placeholder, as content is not returned
+          lastMessageTime: "", // Placeholder, as time is not returned
+          unreadCount: 0, // Placeholder
+          isOnline: onlineUsers.has(otherUserId), // Check if the user is online from existing state
+          firstMatchedMessageId: result.messageId, // Store the specific message ID
+        };
+      });
+
+      // Filter out duplicate conversations by userId/id to avoid showing the same chat multiple times if multiple messages match
+      const uniqueResults = Array.from(
+        new Map(mappedResults.map((item) => [item["id"], item])).values()
+      );
+
+      setSearchResults(uniqueResults);
+    } catch (error) {
+      console.error("Error searching messages:", error);
+      setSearchResults([]); // Clear results on error
     }
   };
 
@@ -241,7 +347,39 @@ export default function MessagesPage() {
     setMessageInput("");
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Authorization token is missing");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://localhost:7014/api/message/${messageId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+        console.log("Message deleted successfully");
+      } else {
+        console.error("Failed to delete message");
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
   const mainMargin = isMessagesPage ? "md:ml-20" : "md:ml-72";
+
+  const displayedConversations =
+    searchQuery.trim() !== "" ? searchResults : conversations;
 
   return (
     <section
@@ -249,13 +387,19 @@ export default function MessagesPage() {
     >
       <div className="flex h-[calc(100vh-5rem)]">
         {/* Conversations List */}
-        <div className="w-full md:w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1C1C1E]">
+        <div
+          className={`w-full md:w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1C1C1E] ${
+            selectedConversation ? "hidden md:block" : "block"
+          }`}
+        >
           {/* Search Bar */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search messages"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-[#F5F7FA] text-[#2E2E2E] rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DD0E1] dark:bg-[#2A2A2D] dark:text-[#EAEAEA] dark:placeholder-gray-400"
               />
               <FontAwesomeIcon
@@ -267,7 +411,7 @@ export default function MessagesPage() {
 
           {/* Conversations */}
           <div className="overflow-y-auto h-[calc(100%-4rem)]">
-            {conversations.map((conversation) => (
+            {displayedConversations.map((conversation) => (
               <div
                 key={conversation.id}
                 className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${
@@ -275,7 +419,12 @@ export default function MessagesPage() {
                     ? "bg-gray-100 dark:bg-gray-800"
                     : ""
                 }`}
-                onClick={() => setSelectedConversation(conversation.id)}
+                onClick={() => {
+                  setSelectedConversation(conversation.id);
+                  if (conversation.firstMatchedMessageId) {
+                    setMessageToScrollToId(conversation.firstMatchedMessageId);
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -325,6 +474,12 @@ export default function MessagesPage() {
               {/* Chat Header */}
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedConversation(null)}
+                    className="md:hidden mr-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    <FontAwesomeIcon icon={faArrowLeft} size="lg" />
+                  </button>
                   <div className="relative">
                     <img
                       src={
@@ -361,14 +516,19 @@ export default function MessagesPage() {
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${
+                    id={`message-${message.id}`}
+                    className={`flex items-center ${
                       message.senderId === profile?.id
                         ? "justify-end"
                         : "justify-start"
+                    } ${
+                      highlightedMessageId === message.id
+                        ? "bg-yellow-200 dark:bg-yellow-700/50 transition-colors duration-500"
+                        : ""
                     }`}
                   >
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
+                      className={`group relative max-w-[70%] rounded-lg p-3 ${
                         message.senderId === profile?.id
                           ? "bg-blue-500 text-white"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -378,6 +538,14 @@ export default function MessagesPage() {
                       <span className="text-xs opacity-70 mt-1 block">
                         {formatTimestamp(message.timestamp)}
                       </span>
+                      {message.senderId === profile?.id && (
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="absolute top-1 right-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity duration-200 focus:outline-none  border-none focus:ring-opacity-50"
+                        >
+                          <FontAwesomeIcon icon={faTrash} size="sm" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
