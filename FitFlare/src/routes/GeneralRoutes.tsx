@@ -6,6 +6,7 @@ import LoginPage from "../pages/LoginPage";
 import RedirectIfAuth from "../guards/RedirectIfAuth";
 import NotFoundPage from "../pages/errorPages/NotFound";
 import SignUpPage from "../pages/SignUpPage";
+import EmailConfirmedPage from "../pages/EmailConfirmedPage";
 
 export const GeneralRoutes: RouteObject[] = [
   //login page first since it's a raw page
@@ -24,6 +25,10 @@ export const GeneralRoutes: RouteObject[] = [
         <SignUpPage />
       </RedirectIfAuth>
     ),
+  },
+  {
+    path: "/confirm-email",
+    element: (<EmailConfirmedPage/>)
   },
   //main app routes
   AppRoutes,
