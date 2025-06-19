@@ -17,6 +17,7 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -97,11 +98,7 @@ export default function SignUpPage() {
         throw new Error(errorData.detail || "Something went wrong.");
       }
 
-      const data = await res.json();
-      useAuthStore.getState().setToken(data.token); // Store the token
-      console.log("Token stored:", data.token);
-
-      navigate("/"); // Redirect to the home page
+      setShowConfirmationModal(true);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Try again later.");
     } finally {
@@ -120,7 +117,7 @@ export default function SignUpPage() {
       animate={{ backgroundPosition: "50% 100%" }}
       transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
     >
-      <div className="absolute inset-0 bg-[var(--bg-light)] bg-opacity-80 backdrop-blur-md z-0" />
+      <div className="absolute inset-0 bg-[var(--bg-light)] bg-opacity-30 backdrop-blur-md z-0" />
 
       <form className="relative z-10 max-w-md w-full space-y-6 p-8 rounded-2xl shadow-lg border border-[var(--primary-light)] bg-white/5 backdrop-blur-xl text-[var(--text-light)]">
         <h2 className="text-center text-2xl font-bold text-[var(--primary-light)]">
@@ -256,6 +253,28 @@ export default function SignUpPage() {
           </button>
         </div>
       </form>
+      {/* Confirmation Modal */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70">
+          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+            <h3 className="text-xl font-semibold mb-4 text-[var(--primary-light)]">
+              Confirm Your Email
+            </h3>
+            <p className="mb-6 text-gray-700">
+              A confirmation email has been sent to{" "}
+              <span className="font-semibold">{email}</span>.<br />
+              Please check your inbox and confirm your account before
+              continuing.
+            </p>
+            <button
+              className="w-full py-2 px-4 rounded-xl font-semibold text-white bg-[var(--primary-light)] hover:opacity-90 transition"
+              onClick={() => setShowConfirmationModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </motion.section>
   );
 }

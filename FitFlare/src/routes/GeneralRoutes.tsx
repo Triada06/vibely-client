@@ -7,6 +7,7 @@ import RedirectIfAuth from "../guards/RedirectIfAuth";
 import NotFoundPage from "../pages/errorPages/NotFound";
 import SignUpPage from "../pages/SignUpPage";
 import EmailConfirmedPage from "../pages/EmailConfirmedPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 
 export const GeneralRoutes: RouteObject[] = [
   //login page first since it's a raw page
@@ -27,8 +28,12 @@ export const GeneralRoutes: RouteObject[] = [
     ),
   },
   {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+  {
     path: "/confirm-email",
-    element: (<EmailConfirmedPage/>)
+    element: <EmailConfirmedPage />,
   },
   //main app routes
   AppRoutes,

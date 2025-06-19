@@ -10,6 +10,10 @@ export default function Authentication() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStep, setForgotStep] = useState<"email" | "sent">("email");
+  const [forgotError, setForgotError] = useState("");
   const navigate = useNavigate();
 
   const isEmail = emailOrUserName.includes("@");
@@ -58,6 +62,30 @@ export default function Authentication() {
     }
   };
 
+  // Send forgot password API request
+  const handleSendResetEmail = async () => {
+    setForgotError("");
+    try {
+      const res = await fetch(
+        "https://localhost:7014/api/account/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: forgotEmail }),
+        }
+      );
+      if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        const message =
+          errorBody?.detail || errorBody?.title || "Something went wrong.";
+        throw new Error(message);
+      }
+      setForgotStep("sent");
+    } catch (err: any) {
+      setForgotError(err.message || "Something went wrong. Try again later.");
+    }
+  };
+
   const backgroundImage = useMotionTemplate`radial-gradient(100% 100% at 50% 0%, 
     var(--gradient-start) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%)`;
 
@@ -72,7 +100,7 @@ export default function Authentication() {
       animate={{ backgroundPosition: "50% 100%" }}
       transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
     >
-      <div className="absolute inset-0 bg-[var(--bg-light)] bg-opacity-80 backdrop-blur-md z-0" />
+      <div className="absolute inset-0 bg-[var(--bg-light)] bg-opacity-30 backdrop-blur-md z-0" />
 
       <form className="relative z-10 max-w-md w-full space-y-6 p-8 rounded-2xl shadow-lg border border-[var(--primary-light)] bg-white/5 backdrop-blur-xl text-[var(--text-light)]">
         <h2 className="text-center text-2xl font-bold text-[var(--primary-light)]">
@@ -115,6 +143,18 @@ export default function Authentication() {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            <button
+              type="button"
+              className="mt-2 text-xs text-[var(--primary-light)] hover:underline focus:outline-none"
+              onClick={() => {
+                setShowForgotModal(true);
+                setForgotStep("email");
+                setForgotEmail("");
+                setForgotError("");
+              }}
+            >
+              Forgot password?
+            </button>
           </div>
 
           {error && (
@@ -149,6 +189,66 @@ export default function Authentication() {
           </button>
         </div>
       </form>
+
+      {/* Forgot Password Modal Flow */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70">
+          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+            {forgotStep === "email" && (
+              <>
+                <h3 className="text-xl font-semibold mb-4 text-[var(--primary-light)]">
+                  Reset Password
+                </h3>
+                <p className="mb-4 text-gray-700">
+                  Enter your email address to receive a password reset link.
+                </p>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="w-full px-4 py-2 mb-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--primary-light)]"
+                />
+                {forgotError && (
+                  <div className="text-red-500 text-sm mb-2">{forgotError}</div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    className="flex-1 py-2 px-4 rounded-xl font-semibold text-white bg-[var(--primary-light)] hover:opacity-90 transition"
+                    onClick={handleSendResetEmail}
+                  >
+                    Send Reset Link
+                  </button>
+                  <button
+                    className="flex-1 py-2 px-4 rounded-xl font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition"
+                    onClick={() => setShowForgotModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+            {forgotStep === "sent" && (
+              <>
+                <h3 className="text-xl font-semibold mb-4 text-[var(--primary-light)]">
+                  Check Your Email
+                </h3>
+                <p className="mb-6 text-gray-700">
+                  A password reset link has been sent to{" "}
+                  <span className="font-semibold">{forgotEmail}</span>.<br />
+                  Please check your inbox and follow the instructions.
+                </p>
+                <button
+                  className="w-full py-2 px-4 rounded-xl font-semibold text-white bg-[var(--primary-light)] hover:opacity-90 transition"
+                  onClick={() => setShowForgotModal(false)}
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </motion.section>
   );
 }
