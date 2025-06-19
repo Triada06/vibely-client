@@ -1,0 +1,27 @@
+/* Custom scrollbar for chat and conversation lists */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4dd0e1 #f5f7fa;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: #f5f7fa;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4dd0e1;
+  border-radius: 8px;
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: #4dd0e1 #2a2a2d;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar {
+  background: #2a2a2d;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4dd0e1;
+}

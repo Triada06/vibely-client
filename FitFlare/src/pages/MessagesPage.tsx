@@ -410,7 +410,7 @@ export default function MessagesPage() {
           </div>
 
           {/* Conversations */}
-          <div className="overflow-y-auto h-[calc(100%-4rem)]">
+          <div className="overflow-y-auto h-[calc(100%-4rem)] custom-scrollbar">
             {displayedConversations.map((conversation) => (
               <div
                 key={conversation.id}
@@ -512,7 +512,7 @@ export default function MessagesPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {messages.map((message) => (
                   <div
                     key={message.id}
