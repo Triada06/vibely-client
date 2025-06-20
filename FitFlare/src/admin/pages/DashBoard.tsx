@@ -1,27 +1,57 @@
+import { useEffect, useState } from "react";
+import { useUserStore } from "../store/storeAdmin";
+import { usePostStore } from "../../store/appPostsStore";
+import { AlertIcon, ListIcon } from "../icons";
+import {
+  BannedUsersStatisticsChart,
+  UploadedPostsStatisticsChart,
+} from "../components/statistics/BannedAndPostsStatisticsChart";
+
+interface DashboardMonthlyStats {
+  bannedUsers: number[];
+  uploadedPosts: number[];
+}
+
 export default function DashBoard() {
+  const { users, fetchUsers } = useUserStore();
+  const { posts, fetchPosts } = usePostStore();
+  const [stats, setStats] = useState<DashboardMonthlyStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUsers(1, "", "asc");
+    fetchPosts();
+    const fetchStats = async () => {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        "https://localhost:7014/api/admin/dashboard/monthly",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const data = await res.json();
+      setStats(data);
+      setLoading(false);
+    };
+    fetchStats();
+  }, []);
+
   return (
     <>
-      <div className="grid grid-cols-4 gap-4 md:gap-6 ">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-          <div className="col-span-12 space-y-6 xl:col-span-7">
-            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
+      <div className="mt-8 flex flex-col">
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">
+            Loading dashboard statistics...
           </div>
-        </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-          <div className="col-span-12 space-y-6 xl:col-span-7">
-            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-          <div className="col-span-12 space-y-6 xl:col-span-7">
-            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-          <div className="col-span-12 space-y-6 xl:col-span-7">
-            {/* <h1 className="dark:text-purple-900">dashboard gng</h1> */}
-          </div>
-        </div>
+        ) : (
+          <>
+            <BannedUsersStatisticsChart data={stats?.bannedUsers} />
+            <UploadedPostsStatisticsChart data={stats?.uploadedPosts} />
+          </>
+        )}
       </div>
     </>
   );
