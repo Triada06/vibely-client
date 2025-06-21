@@ -6,9 +6,11 @@ import ForbiddenPage from "../pages/errorPages/ForbiddenPage";
 export default function RequireAuth({
   children,
   adminOnly = false,
+  ownerOnly = false,
 }: {
   children: React.ReactNode;
   adminOnly?: boolean;
+  ownerOnly?: boolean;
 }) {
   const { isAuthenticated, checkAuth, isLoading, role } = useAuthStore();
   const location = useLocation();
@@ -21,6 +23,10 @@ export default function RequireAuth({
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (ownerOnly && role !== "Owner") {
+    return <ForbiddenPage />;
   }
 
   if (adminOnly && role !== "Admin" && role !== "Owner") {

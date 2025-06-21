@@ -466,8 +466,8 @@ export default function HomePage() {
                 >
                   <img
                     className="rounded-3xl size-12 object-cover select-none "
-                    src={profile.profilePictureUri || ".default-profile-picture.jpg"}
-                    alt="my-profile-story"
+                    src={profile.profilePictureUri ?? ".default-profile-picture.jpg"}
+                    alt=""
                     draggable="false"
                   />
                 </div>

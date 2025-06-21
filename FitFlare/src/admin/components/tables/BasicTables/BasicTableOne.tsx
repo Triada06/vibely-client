@@ -93,8 +93,15 @@ export default function BasicTableOne() {
         setBanUserId(null);
         fetchUsers(page, searchText, sort, pageSize); // Refresh users
       } else {
-        const err = await res.text();
-        setBanError(err || "Failed to ban user.");
+        const errText = await res.text();
+        try {
+          const errJson = JSON.parse(errText);
+          setBanError(
+            errJson.detail || errJson.title || errText || "Failed to ban user."
+          );
+        } catch (e) {
+          setBanError(errText || "Failed to ban user.");
+        }
       }
     } catch (e) {
       setBanError("Network error.");

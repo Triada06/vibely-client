@@ -8,6 +8,7 @@ import NotFoundPage from "../pages/errorPages/NotFound";
 import SignUpPage from "../pages/SignUpPage";
 import EmailConfirmedPage from "../pages/EmailConfirmedPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
+import ConfirmOwnerTransferPage from "../pages/ConfirmOwnerTransferPage";
 
 export const GeneralRoutes: RouteObject[] = [
   //login page first since it's a raw page
@@ -34,6 +35,10 @@ export const GeneralRoutes: RouteObject[] = [
   {
     path: "/confirm-email",
     element: <EmailConfirmedPage />,
+  },
+  {
+    path: "/confirm-owner",
+    element: <ConfirmOwnerTransferPage />,
   },
   //main app routes
   AppRoutes,

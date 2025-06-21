@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import PostAdminModal from "../components/PostAdminModal";
 import Button from "../components/ui/button/Button";
+import BanModal from "../components/common/BanModal";
 
 interface Post {
   id: string;
@@ -20,6 +21,13 @@ interface Post {
   comments?: any[];
 }
 
+interface Ban {
+  id: string;
+  reason: string;
+  bannedAt: string;
+  expiresAt: string | null;
+}
+
 interface User {
   id: string;
   fullName: string;
@@ -30,7 +38,7 @@ interface User {
   isPrivate: boolean;
   createdAt: string;
   posts: Post[];
-  bans: any[];
+  bans: Ban[];
 }
 
 export default function UserSinglePage() {
@@ -43,23 +51,38 @@ export default function UserSinglePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      const token = localStorage.getItem("token");
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+  const [selectedBan, setSelectedBan] = useState<Ban | null>(null);
+  const [banLoading, setBanLoading] = useState(false);
+  const [banError, setBanError] = useState<string | null>(null);
+
+  const fetchUser = useCallback(async () => {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    try {
       const res = await fetch(
         `https://localhost:7014/api/admin/appuser/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      const data = await res.json();
-      setUser(data);
-      setPosts(data.posts || []);
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+        setPosts(data.posts || []);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      setUser(null);
+    } finally {
       setLoading(false);
-    };
-    fetchUser();
+    }
   }, [id]);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   // When a post is selected, fetch its comments
   useEffect(() => {
@@ -103,6 +126,83 @@ export default function UserSinglePage() {
       // Optionally show error
     } finally {
       setDeletingPostId(null);
+    }
+  };
+
+  const handleOpenUpdateModal = (ban: Ban) => {
+    setSelectedBan(ban);
+    setIsBanModalOpen(true);
+    setBanError(null);
+  };
+
+  const handleUnban = async (banId: string) => {
+    if (!window.confirm("Are you sure you want to remove this ban record?"))
+      return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`https://localhost:7014/api/admin/ban/${banId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchUser(); // Refresh user data
+      } else {
+        const errorText = await res.text();
+        alert(`Failed to unban: ${errorText}`);
+      }
+    } catch (err) {
+      alert("An error occurred while unbanning.");
+    }
+  };
+
+  const handleUpdateBanSubmit = async ({
+    reason,
+    expiresAt,
+  }: {
+    reason: string;
+    expiresAt: string | null;
+  }) => {
+    if (!selectedBan) return;
+    setBanLoading(true);
+    setBanError(null);
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(
+        `https://localhost:7014/api/admin/ban/${selectedBan.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ reason, expiresAt }),
+        }
+      );
+
+      if (res.ok) {
+        setIsBanModalOpen(false);
+        setSelectedBan(null);
+        fetchUser(); // Refresh user data
+      } else {
+        const errText = await res.text();
+        try {
+          const errJson = JSON.parse(errText);
+          setBanError(
+            errJson.detail ||
+              errJson.title ||
+              errText ||
+              "Failed to update ban."
+          );
+        } catch (e) {
+          setBanError(errText || "Failed to update ban.");
+        }
+      }
+    } catch (e) {
+      setBanError("Network error.");
+    } finally {
+      setBanLoading(false);
     }
   };
 
@@ -240,7 +340,69 @@ export default function UserSinglePage() {
           />
         )}
       </div>
-      {/* TODO: Bans section here */}
+      {/* Bans Section */}
+      <div className="mt-10">
+        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+          Ban History
+        </h3>
+        {user.bans.length === 0 ? (
+          <div className="text-gray-400 dark:text-gray-500">
+            No bans recorded for this user.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {user.bans.map((ban) => (
+              <div
+                key={ban.id}
+                className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+              >
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800 dark:text-white">
+                    {ban.reason}
+                  </p>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <span>
+                      Banned on: {new Date(ban.bannedAt).toLocaleDateString()}
+                    </span>
+                    <span className="mx-2">|</span>
+                    <span>
+                      Expires:{" "}
+                      {ban.expiresAt
+                        ? new Date(ban.expiresAt).toLocaleDateString()
+                        : "Permanent"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenUpdateModal(ban)}
+                  >
+                    Update
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleUnban(ban.id)}
+                    className="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+                  >
+                    Unban
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <BanModal
+        isOpen={isBanModalOpen}
+        onClose={() => setIsBanModalOpen(false)}
+        onSubmit={handleUpdateBanSubmit}
+        loading={banLoading}
+        error={banError}
+        initialReason={selectedBan?.reason}
+        initialExpiresAt={selectedBan?.expiresAt}
+      />
     </div>
   );
 }

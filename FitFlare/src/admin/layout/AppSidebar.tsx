@@ -32,14 +32,9 @@ const navItems: NavItem[] = [
     path : "/admin/appusers"
   },
   {
-    icon : <ListIcon/>,
-    name : "App Posts",
-    path : "/admin/posts"
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "Admin Profile",
-    path: "/admin/me",
+    icon : <ListIcon />,
+    name: "Admins management",
+    path: "/admin/admins",
   },
 ];
 

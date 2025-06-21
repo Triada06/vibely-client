@@ -29,15 +29,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
   userId: null,
 
   setToken: (token: string) => {
-    const decoded = jwtDecode<JwtPayload>(token);
-    const role =
-      decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ??
-      decoded.role ??
-      null;
-
     localStorage.setItem("token", token);
+    const decoded = jwtDecode<JwtPayload>(token);
 
-    set({ token, role, userId: decoded.sub });
+    const decodedRole =
+      decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ??
+      decoded.role;
+
+    let role: string | null = null;
+    if (Array.isArray(decodedRole)) {
+      if (decodedRole.includes("Owner")) {
+        role = "Owner";
+      } else if (decodedRole.includes("Admin")) {
+        role = "Admin";
+      } else {
+        role = decodedRole[0] ?? null;
+      }
+    } else if (typeof decodedRole === "string") {
+      role = decodedRole;
+    }
+    set({ token, role, userId: decoded.sub, isAuthenticated: true });
   },
 
   logout: () => {
@@ -60,8 +71,22 @@ export const useAuthStore = create<AuthStore>((set) => ({
     try {
       const decoded = jwtDecode<JwtPayload>(token);
       const exp = decoded.exp * 1000;
-      const role = Array.isArray(decoded.role) ? decoded.role[0] : decoded.role;
-
+      const decodedRole =
+        decoded[
+          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        ] ?? decoded.role;
+      let role: string | null = null;
+      if (Array.isArray(decodedRole)) {
+        if (decodedRole.includes("Owner")) {
+          role = "Owner";
+        } else if (decodedRole.includes("Admin")) {
+          role = "Admin";
+        } else {
+          role = decodedRole[0] ?? null;
+        }
+      } else if (typeof decodedRole === "string") {
+        role = decodedRole;
+      }
       if (Date.now() < exp) {
         set({
           token,
@@ -71,6 +96,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
           userId: decoded.sub,
         });
       } else {
+        localStorage.removeItem("token");
         set({
           isAuthenticated: false,
           isLoading: false,
@@ -79,6 +105,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
         });
       }
     } catch {
+      localStorage.removeItem("token");
       set({
         isAuthenticated: false,
         isLoading: false,
