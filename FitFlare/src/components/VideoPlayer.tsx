@@ -9,7 +9,7 @@ interface ReelPlayerProps {
 
 const ReelPlayer: React.FC<ReelPlayerProps> = ({ src, initialTime }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     if (videoRef.current && initialTime !== undefined) {
@@ -40,6 +40,7 @@ const ReelPlayer: React.FC<ReelPlayerProps> = ({ src, initialTime }) => {
         playsInline
         className="w-full h-full object-cover cursor-pointer"
         draggable={false}
+        {...(isPlaying ? { autoPlay: true } : {})}
       />
       {!isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/30">

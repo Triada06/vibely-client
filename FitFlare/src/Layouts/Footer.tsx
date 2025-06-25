@@ -27,7 +27,7 @@ export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
     <>
       <footer className="border-t-2  md:hidden fixed w-full bottom-0 bg-[#F5F7FA] dark:bg-[#2A2A2D] shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
         <nav className="flex-grow prevent-select ">
-          <ul className="flex justify-evenly items-center w-full ">
+          <ul className="flex justify-evenly items-center w-full">
             <li className="m-2 sm:m-3 md:m-4 ">
               <NavLink
                 to="/"

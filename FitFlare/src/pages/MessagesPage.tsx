@@ -5,6 +5,8 @@ import {
   faSearch,
   faTrash,
   faArrowLeft,
+  faPhone,
+  faVideo,
 } from "@fortawesome/free-solid-svg-icons";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -14,6 +16,15 @@ import {
 } from "../helpers/chatHub";
 import { useAuthStore } from "../store/authStore";
 import { useProfileStore } from "../store/profileStore";
+import {
+  startCallConnection,
+  callUser,
+  sendOffer,
+  sendAnswer,
+  sendIceCandidate,
+  endCall,
+  CallHubCallbacks,
+} from "../helpers/callHub";
 
 interface Message {
   id: string;
@@ -58,6 +69,35 @@ export default function MessagesPage() {
   const [highlightedMessageId, setHighlightedMessageId] = useState<
     string | null
   >(null);
+  const [callModal, setCallModal] = useState<null | "audio" | "video">(null);
+  const [incomingCall, setIncomingCall] = useState<null | {
+    callerId: string;
+    type: "audio" | "video";
+  }>(null);
+  const [callInProgress, setCallInProgress] = useState<null | {
+    userId: string;
+    type: "audio" | "video";
+  }>(null);
+  const [callStatus, setCallStatus] = useState<string>("");
+  const [callStep, setCallStep] = useState<
+    null | "calling" | "ringing" | "connecting" | "connected" | "ended"
+  >(null);
+  const [statusTimeout, setStatusTimeout] = useState<number | null>(null);
+  const lastIncomingCallType = useRef<"audio" | "video">("audio");
+
+  // Add refs for local and remote media streams
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const localAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Add refs for peer connection and remote stream
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Store pending offer for callee
+  const pendingOfferRef = useRef<string | null>(null);
 
   // Debounce for search input
   useEffect(() => {
@@ -340,6 +380,225 @@ export default function MessagesPage() {
     }
   }, [selectedConversation, profile?.id]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (statusTimeout) clearTimeout(statusTimeout);
+    };
+  }, [statusTimeout]);
+
+  // Setup CallHub connection
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const callCallbacks: CallHubCallbacks = {
+      onIncomingCall: (callerId) => {
+        // Do nothing here, wait for offer to set the correct type
+      },
+      onReceiveOffer: (userId, offer, isVideoCall) => {
+        const type = isVideoCall ? "video" : "audio";
+        lastIncomingCallType.current = type;
+        setIncomingCall({ callerId: userId, type });
+        setCallStep("ringing");
+        setCallStatus(
+          `Incoming ${type === "video" ? "Video" : "Audio"} call...`
+        );
+        pendingOfferRef.current = offer;
+      },
+      onReceiveAnswer: async (userId, answer) => {
+        setCallStatus("Connected");
+        setCallStep("connected");
+        if (peerConnectionRef.current) {
+          const answerDesc = new RTCSessionDescription(JSON.parse(answer));
+          await peerConnectionRef.current.setRemoteDescription(answerDesc);
+        }
+      },
+      onReceiveIceCandidate: async (userId, candidate) => {
+        if (peerConnectionRef.current && candidate) {
+          try {
+            await peerConnectionRef.current.addIceCandidate(
+              new RTCIceCandidate(JSON.parse(candidate))
+            );
+          } catch (err) {
+            // ignore
+          }
+        }
+        setCallStatus("ICE candidate exchanged");
+      },
+      onCallEnded: (userId) => {
+        setCallStatus("Call ended");
+        setCallStep("ended");
+        setCallInProgress(null);
+        setCallModal(null);
+        setIncomingCall(null);
+        const t = setTimeout(() => setCallStatus(""), 2000);
+        setStatusTimeout(t);
+      },
+    };
+    startCallConnection(token, callCallbacks);
+  }, []);
+
+  // Clean up local stream on call end
+  useEffect(() => {
+    if (callStep === "ended" || !callModal) {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+      }
+    }
+  }, [callStep, callModal]);
+
+  // Clean up peer connection and remote stream on call end
+  useEffect(() => {
+    if (callStep === "ended" || !callModal) {
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      if (remoteStreamRef.current) {
+        remoteStreamRef.current.getTracks().forEach((track) => track.stop());
+        remoteStreamRef.current = null;
+      }
+    }
+  }, [callStep, callModal]);
+
+  // When accepting a call or starting a call, get local media
+  const startLocalMedia = async (type: "audio" | "video") => {
+    try {
+      const constraints =
+        type === "video"
+          ? { audio: true, video: true }
+          : { audio: true, video: false };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      localStreamRef.current = stream;
+      if (type === "video" && localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      } else if (type === "audio" && localAudioRef.current) {
+        localAudioRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      alert("Could not access media devices: " + err);
+    }
+  };
+
+  // Helper: create a new RTCPeerConnection
+  const createPeerConnection = (
+    type: "audio" | "video",
+    targetUserId: string
+  ) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+    // Add local tracks
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current!);
+      });
+    }
+    // Handle ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendIceCandidate(targetUserId, JSON.stringify(event.candidate));
+      }
+    };
+    // Handle remote stream
+    pc.ontrack = (event) => {
+      if (!remoteStreamRef.current) {
+        remoteStreamRef.current = new MediaStream();
+        if (type === "video" && remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        } else if (type === "audio" && remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        }
+      }
+      event.streams[0].getTracks().forEach((track) => {
+        if (
+          remoteStreamRef.current &&
+          !remoteStreamRef.current.getTracks().find((t) => t.id === track.id)
+        ) {
+          remoteStreamRef.current.addTrack(track);
+        }
+      });
+    };
+    return pc;
+  };
+
+  // Start a call (mocked)
+  const handleStartCall = async (type: "audio" | "video") => {
+    if (!selectedConversation) return;
+    callUser(selectedConversation);
+    setCallModal(type);
+    setCallInProgress({ userId: selectedConversation, type });
+    setCallStatus("Calling...");
+    setCallStep("calling");
+    await startLocalMedia(type);
+    // Create peer connection
+    const pc = createPeerConnection(type, selectedConversation);
+    peerConnectionRef.current = pc;
+    // Create offer
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    // Send offer via SignalR
+    sendOffer(selectedConversation, JSON.stringify(offer), type === "video");
+    setCallStatus("Waiting for answer...");
+    setCallStep("ringing");
+  };
+
+  // Accept incoming call (mocked)
+  const handleAcceptCall = async () => {
+    if (incomingCall) {
+      setCallInProgress({
+        userId: incomingCall.callerId,
+        type: incomingCall.type,
+      });
+      setCallModal(incomingCall.type);
+      setCallStatus("Connecting...");
+      setCallStep("connecting");
+      setIncomingCall(null);
+      await startLocalMedia(incomingCall.type);
+      const pc = createPeerConnection(incomingCall.type, incomingCall.callerId);
+      peerConnectionRef.current = pc;
+      if (pendingOfferRef.current) {
+        const offerDesc = new RTCSessionDescription(
+          JSON.parse(pendingOfferRef.current)
+        );
+        await pc.setRemoteDescription(offerDesc);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        sendAnswer(incomingCall.callerId, JSON.stringify(answer));
+        setCallStatus("Connected");
+        setCallStep("connected");
+      }
+    }
+  };
+
+  // Decline incoming call (mocked)
+  const handleDeclineCall = () => {
+    if (incomingCall) {
+      endCall(incomingCall.callerId);
+      setCallStatus("Call declined");
+      setCallStep("ended");
+      setIncomingCall(null);
+      // Hide status after 2s
+      const t = setTimeout(() => setCallStatus(""), 2000);
+      setStatusTimeout(t);
+    }
+  };
+
+  // End call (mocked)
+  const handleEndCall = () => {
+    if (callInProgress) {
+      endCall(callInProgress.userId);
+      setCallStatus("Call ended");
+      setCallStep("ended");
+      setCallInProgress(null);
+      setCallModal(null);
+      // Hide status after 2s
+      const t = setTimeout(() => setCallStatus(""), 2000);
+      setStatusTimeout(t);
+    }
+  };
+
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedConversation) return;
 
@@ -381,10 +640,151 @@ export default function MessagesPage() {
   const displayedConversations =
     searchQuery.trim() !== "" ? searchResults : conversations;
 
+  // Helper to get the remote user's profile picture and name
+  const getRemoteUser = () => {
+    const userId = callInProgress?.userId || selectedConversation;
+    return conversations.find((c) => c.id === userId);
+  };
+
+  // Helper to get username by userId
+  const getUsernameById = (userId: string | undefined) => {
+    if (!userId) return "Unknown";
+    const user = conversations.find((c) => c.id === userId);
+    return user?.username || userId;
+  };
+
   return (
     <section
       className={`min-h-screen bg-[#F5F7FA] dark:bg-[#1C1C1E] pt-20 pb-24 md:pt-12 md:pb-0 transition-all duration-300 ${mainMargin}`}
     >
+      {/* Call Modal Overlay */}
+      {callModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center  bg-[#F5F7FA] dark:bg-[#2A2A2D]  bg-opacity-90">
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center w-full max-w-2xl mx-auto p-0">
+              {callModal === "video" && (
+                <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full mb-8">
+                  <div className="flex flex-col items-center">
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-64 h-48 md:w-80 md:h-60 rounded-2xl  bg-[#F5F7FA] dark:bg-[#2A2A2D]  border-4 border-blue-400 shadow-xl object-cover mb-2"
+                      style={{ background: "#18181b" }}
+                    />
+                    <span className="dark:text-[#EAEAEA] text-[#2E2E2E] text-lg">
+                      You
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <video
+                      ref={remoteVideoRef}
+                      autoPlay
+                      playsInline
+                      className="w-64 h-48 md:w-80 md:h-60 rounded-2xl  bg-[#F5F7FA] dark:bg-[#2A2A2D]  border-4 border-green-400 shadow-xl object-cover mb-2"
+                      style={{ background: "#18181b" }}
+                    />
+                    <span className="dark:text-[#EAEAEA] text-[#2E2E2E] text-lg">
+                      {getRemoteUser()?.username || "Remote"}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {callModal === "audio" && (
+                <div className="flex flex-col items-center justify-center mb-8 w-full">
+                  <div className="flex flex-col items-center justify-center w-full mb-8">
+                    <img
+                      src={
+                        getRemoteUser()?.profilePicture ||
+                        "/default-profile-picture.jpg"
+                      }
+                      alt={getRemoteUser()?.username || "User"}
+                      className="w-36 h-36 rounded-full object-cover border-4 border-blue-400 shadow-xl mb-4 bg-white"
+                      style={{ background: "#fff" }}
+                    />
+                    <span className="text-2xl font-semibold dark:text-[#EAEAEA] text-[#2E2E2E] mb-2">
+                      {getRemoteUser()?.username || "User"}
+                    </span>
+                    <p className="text-lg text-gray-300 mb-2">
+                      {callStatus !== "ICE candidate exchanged"
+                        ? callStatus
+                        : ""}
+                    </p>
+                  </div>
+                  <audio
+                    ref={localAudioRef}
+                    autoPlay
+                    muted
+                    className="hidden"
+                  />
+                  <audio ref={remoteAudioRef} autoPlay className="hidden" />
+                </div>
+              )}
+              {callStep === "calling" && (
+                <p className="mb-4 text-xl text-gray-400">Calling...</p>
+              )}
+              {callStep === "ringing" && (
+                <p className="mb-4 text-xl text-gray-400">
+                  Waiting for answer...
+                </p>
+              )}
+              {callStep === "connecting" && (
+                <p className="mb-4 text-xl text-gray-400">Connecting...</p>
+              )}
+              {callStep === "connected" && (
+                <p className="mb-4 text-2xl text-green-400 font-bold">
+                  Connected
+                </p>
+              )}
+              {callStep === "ended" && (
+                <p className="mb-4 text-2xl text-red-400 font-bold">
+                  Call ended
+                </p>
+              )}
+              {callStep !== "ended" && (
+                <button
+                  onClick={handleEndCall}
+                  className="px-10 py-4 bg-red-600 text-white rounded-2xl text-xl font-bold hover:bg-red-700 transition mt-8 shadow-xl"
+                >
+                  End Call
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Incoming Call Modal */}
+      {incomingCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F5F7FA] dark:bg-[#2A2A2D]  bg-opacity-50">
+          <div className="bg-white dark:bg-[#232326] rounded-lg shadow-lg p-8 flex flex-col items-center">
+            <FontAwesomeIcon
+              icon={incomingCall.type === "audio" ? faPhone : faVideo}
+              className="text-4xl mb-4 text-blue-500"
+            />
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+              Incoming {incomingCall.type === "audio" ? "Audio" : "Video"} Call
+            </h2>
+            <p className="mb-6 text-gray-600 dark:text-gray-300">
+              User {getUsernameById(incomingCall.callerId)} is calling you.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={handleAcceptCall}
+                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              >
+                Accept
+              </button>
+              <button
+                onClick={handleDeclineCall}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex h-[calc(100vh-5rem)]">
         {/* Conversations List */}
         <div
@@ -494,7 +894,7 @@ export default function MessagesPage() {
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
                     )}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 dark:text-white">
                       {
                         conversations.find((c) => c.id === selectedConversation)
@@ -507,6 +907,23 @@ export default function MessagesPage() {
                         ? "Active now"
                         : "Offline"}
                     </p>
+                  </div>
+                  {/* Audio/Video Call Buttons */}
+                  <div className="flex gap-2 ml-2">
+                    <button
+                      onClick={() => handleStartCall("audio")}
+                      className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-500 hover:text-blue-600 transition"
+                      title="Start Audio Call"
+                    >
+                      <FontAwesomeIcon icon={faPhone} size="lg" />
+                    </button>
+                    <button
+                      onClick={() => handleStartCall("video")}
+                      className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-500 hover:text-blue-600 transition"
+                      title="Start Video Call"
+                    >
+                      <FontAwesomeIcon icon={faVideo} size="lg" />
+                    </button>
                   </div>
                 </div>
               </div>

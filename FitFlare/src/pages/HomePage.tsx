@@ -87,39 +87,6 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const video = entry.target as HTMLVideoElement;
-          if (video) {
-            if (entry.isIntersecting) {
-              video.play().catch(() => {
-                // If play fails, try muted
-                video.muted = true;
-                video.play().catch(() => {});
-              });
-            } else {
-              video.pause();
-            }
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
-    // Observe all video elements
-    document.querySelectorAll("video").forEach((video) => {
-      observer.observe(video);
-    });
-
-    return () => {
-      document.querySelectorAll("video").forEach((video) => {
-        observer.unobserve(video);
-      });
-    };
-  }, [posts]);
-
-  useEffect(() => {
     const fetchPosts = async () => {
       try {
         const response = await fetch("https://localhost:7014/api/post/feed", {
@@ -466,7 +433,10 @@ export default function HomePage() {
                 >
                   <img
                     className="rounded-3xl size-12 object-cover select-none "
-                    src={profile.profilePictureUri ?? ".default-profile-picture.jpg"}
+                    src={
+                      profile.profilePictureUri ??
+                      ".default-profile-picture.jpg"
+                    }
                     alt=""
                     draggable="false"
                   />
@@ -537,9 +507,6 @@ export default function HomePage() {
                       if (el) {
                         videoRefs.set(post.id, el);
                         el.muted = true;
-                        el.addEventListener("play", () => {
-                          el.muted = false;
-                        });
                       } else {
                         videoRefs.delete(post.id);
                       }
@@ -549,6 +516,7 @@ export default function HomePage() {
                     controls
                     loop
                     playsInline
+                    muted={true}
                   />
                 )}
               </div>
