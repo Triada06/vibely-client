@@ -32,7 +32,7 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
   const isMessagesPage = location.pathname.startsWith("/messages");
   const [isHovered, setIsHovered] = useState(false);
 
-  const sidebarWidth = isMessagesPage && !isHovered ? 80 : 288; 
+  const sidebarWidth = isMessagesPage && !isHovered ? 80 : 288;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,7 +106,7 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
                   draggable="false"
                 />
                 <span className="prevent-select text-[#2E2E2E] dark:text-[#EAEAEA] text-2xl ml-2">
-                  Fitflare
+                  Vibely
                 </span>
               </>
             )}
