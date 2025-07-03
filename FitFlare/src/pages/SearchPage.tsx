@@ -52,7 +52,7 @@ export default function SearchPage() {
   const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(
     null
   );
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile] = useState<any>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const { token } = useAuthStore();
   const { profile } = useProfileStore();
@@ -171,25 +171,6 @@ export default function SearchPage() {
     } catch (error) {
       console.error("Error fetching tag posts:", error);
       setPosts([]);
-    }
-  };
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const response = await fetch(
-        `https://localhost:7014/api/appuser/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch user profile");
-      const data = await response.json();
-      setUserProfile(data);
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      setUserProfile(null);
     }
   };
 

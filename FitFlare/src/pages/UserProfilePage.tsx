@@ -215,7 +215,10 @@ export default function UserProfilePage() {
         if (!response.ok) return;
         const data = await response.json();
         setProfileStories(data);
-      } catch {}
+      } catch {
+        console.log("Error fetching stories");
+        
+      }
     };
     fetchStories();
   }, [profile?.id, token]);

@@ -1,6 +1,4 @@
 import {
-  faSun,
-  faMoon,
   faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -309,10 +307,6 @@ export default function SettingsPage() {
       setIsDeletingAccount(false);
     }
   };
-
-  const tenMinutesAgo = Date.now() - 600000;
-  const isCacheValid =
-    verifiedPasswordData && verifiedPasswordData.timestamp > tenMinutesAgo;
 
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8 pb-20 h-full min-h-screen">

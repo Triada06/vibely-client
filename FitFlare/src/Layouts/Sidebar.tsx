@@ -17,8 +17,6 @@ import {
   faMessage,
   faSquarePlus,
 } from "@fortawesome/free-regular-svg-icons";
-import NotificationDropdown from "../components/NotificationDropdown";
-
 import { useAuthStore } from "../store/authStore";
 import { useNotificationStore } from "../store/notificationStore";
 
@@ -133,11 +131,11 @@ export default function Sidebar({ profilePicUri }: { profilePicUri?: string }) {
               },
               { to: "/uploadpost", icon: faSquarePlus, label: "Create" },
               { to: "/profile", icon: null, label: "Profile", isProfile: true },
-            ].map((item, idx) => (
+            ].map((item) => (
               <li className="m-2" key={item.to}>
                 <NavLink
                   to={item.to}
-                  className={({ isActive, isPending }) =>
+                  className={({ isActive }) =>
                     `transition-all flex items-center h-10 text-xl rounded-xl duration-300 ease-in-out ${
                       isActive
                         ? "dark:text-[#4DD0E1] hover:bg-[#4B3F72] dark:hover:bg-[#B794F4] text-[#E07A5F] dark:hover:text-[#2A2A2D] hover:text-[#EAF2EF]"

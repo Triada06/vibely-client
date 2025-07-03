@@ -13,11 +13,8 @@ import { useProfileStore } from "../store/profileStore";
 import PostModal from "../components/PostModal";
 import { useAuthStore } from "../store/authStore";
 import type {
-  CommentUser,
-  Comment,
   Post,
   SavedPost,
-  Profile,
 } from "../components/PostModal";
 import StoryModal, { StoryItem } from "../components/StoryModal";
 

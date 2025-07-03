@@ -8,54 +8,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Mock data for development
-const mockNotifications = [
-  {
-    id: "1",
-    type: "LIKE" as const,
-    message: "liked your post",
-    userId: "user1",
-    userName: "johndoe",
-    userProfilePicture: "https://i.pravatar.cc/150?img=1",
-    postId: "post1",
-    postMediaUri: "https://picsum.photos/200/200?random=1",
-    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-    isRead: false,
-  },
-  {
-    id: "2",
-    type: "FOLLOW" as const,
-    message: "started following you",
-    userId: "user2",
-    userName: "janedoe",
-    userProfilePicture: "https://i.pravatar.cc/150?img=2",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    isRead: false,
-  },
-  {
-    id: "3",
-    type: "FOLLOW_REQUEST" as const,
-    message: "requested to follow you",
-    userId: "user3",
-    userName: "mikebrown",
-    userProfilePicture: "https://i.pravatar.cc/150?img=3",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    isRead: true,
-  },
-  {
-    id: "4",
-    type: "LIKE" as const,
-    message: "liked your post",
-    userId: "user4",
-    userName: "sarahsmith",
-    userProfilePicture: "https://i.pravatar.cc/150?img=4",
-    postId: "post2",
-    postMediaUri: "https://picsum.photos/200/200?random=2",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    isRead: true,
-  },
-];
-
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

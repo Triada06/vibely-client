@@ -102,7 +102,6 @@ export default function PostModal({
   initialVideoTime,
 }: PostModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialPostIndex);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -112,7 +111,6 @@ export default function PostModal({
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [hasMoreComments, setHasMoreComments] = useState(true);
-  const commentsEndRef = useRef<HTMLDivElement>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(
@@ -288,9 +286,7 @@ export default function PostModal({
     setCurrentIndex((prev) => (prev < posts.length - 1 ? prev + 1 : 0));
   };
 
-  const handleShare = () => {
-    setIsShareModalOpen(true);
-  };
+ 
 
   const handleLike = async () => {
     const token = localStorage.getItem("token");
@@ -1094,12 +1090,6 @@ export default function PostModal({
                 >
                   <FontAwesomeIcon icon={faHeart} size="lg" />
                 </button>
-                <button
-                  onClick={handleShare}
-                  className="hover:opacity-80 dark:text-white"
-                >
-                  <FontAwesomeIcon icon={faPaperPlane} size="lg" />
-                </button>
               </div>
               <button
                 onClick={isSaved ? handleUnsave : handleSave}
@@ -1215,12 +1205,6 @@ export default function PostModal({
                   <FontAwesomeIcon icon={faHeart} size="lg" />
                 </button>
                 <button
-                  onClick={handleShare}
-                  className="hover:opacity-80 dark:text-white"
-                >
-                  <FontAwesomeIcon icon={faPaperPlane} size="lg" />
-                </button>
-                <button
                   onClick={isSaved ? handleUnsave : handleSave}
                   className={`hover:opacity-80 ${
                     isSaved ? "text-yellow-500" : "dark:text-white"
@@ -1260,52 +1244,6 @@ export default function PostModal({
             className="flex-1"
             onClick={() => setShowMobileComments(false)}
           />
-        </div>
-      )}
-
-      {isShareModalOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center backdrop-blur-sm dark:bg-[#1C1C1E]"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (e.target === e.currentTarget) {
-              setIsShareModalOpen(false);
-            }
-          }}
-        >
-          <div
-            className="bg-white/95 dark:bg-gray-900/95 rounded-xl w-full max-w-md shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold dark:text-white">Share</h2>
-              <button
-                onClick={() => setIsShareModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
-            </div>
-
-            <div className="p-4">
-              <div className="relative mb-4">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div className="max-h-60 overflow-y-auto"></div>
-
-              <button
-                onClick={() => setIsShareModalOpen(false)}
-                className="w-full mt-4 py-2 px-4 rounded-lg font-semibold bg-blue-500 text-white hover:bg-blue-600"
-              >
-                Send
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

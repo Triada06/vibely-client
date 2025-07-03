@@ -1,12 +1,10 @@
-import { useState, useRef, useEffect, MouseEvent } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./ui/modal";
 import Button from "./ui/button/Button";
 import Badge from "./ui/badge/Badge";
 import Alert from "./ui/alert/Alert";
 import { Dropdown } from "./ui/dropdown/Dropdown";
 import { DropdownItem } from "./ui/dropdown/DropdownItem";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "./ui/table";
-import ReelPlayer from "../../components/VideoPlayer";
 import { useAuthStore } from "../../store/authStore";
 
 // Types (copy from PostModal for compatibility)
@@ -58,7 +56,6 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
   onPostTakenDown,
 }) => {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);

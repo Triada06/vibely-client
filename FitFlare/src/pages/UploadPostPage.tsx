@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCloudArrowUp,
@@ -6,11 +6,9 @@ import {
   faRobot,
   faHashtag,
   faInfoCircle,
-  faImage,
-  faVideo,
 } from "@fortawesome/free-solid-svg-icons";
 import { getUserIdFromToken } from "../helpers/getUserIdeFromToken";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB (in bytes)
 const MAX_DESCRIPTION_LENGTH = 150;
@@ -101,7 +99,7 @@ export default function UploadpostPage() {
       console.log(aiResponse);
 
       setAiSuggestion(aiResponse);
-    } catch (err) {
+    } catch {
       setError("AI analysis failed. Please try again.");
     } finally {
       setIsAnalyzing(false);

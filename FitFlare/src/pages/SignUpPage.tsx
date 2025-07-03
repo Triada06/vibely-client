@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, useMotionTemplate } from "framer-motion";
-import { useAuthStore } from "../store/authStore";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function SignUpPage() {
@@ -19,7 +18,6 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
-  const navigate = useNavigate();
 
   const validateEmail = (value: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

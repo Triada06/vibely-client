@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import "../App.css";
-import CardComponent from "../components/CardComponent";
 import PostModal, {
   Post,
   Profile as ModalProfile,

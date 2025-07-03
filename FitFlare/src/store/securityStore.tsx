@@ -28,7 +28,7 @@ const loadVerifiedPasswordData = (): SecurityStore["verifiedPasswordData"] => {
           return null;
         }
       }
-    } catch (e) {
+    } catch  {
       sessionStorage.removeItem("verifiedPasswordData");
       return null;
     }
