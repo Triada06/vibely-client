@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
 
 export default function ConfirmOwnerTransferPage() {
   const [status, setStatus] = useState("verifying"); // verifying, success, error

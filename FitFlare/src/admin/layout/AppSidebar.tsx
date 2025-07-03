@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-// Assume these icons are imported from an icon library
 import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
-  UserCircleIcon,
   UserIcon,
-
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 

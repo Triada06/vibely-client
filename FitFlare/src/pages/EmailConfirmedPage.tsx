@@ -36,7 +36,7 @@ export default function EmailConfirmedPage() {
         setTimeout(() => {
           navigate("/login");
         }, 3000);
-      } catch (error) {
+      } catch {
         setStatus("error");
         setErrorMessage("Failed to confirm email. Please try again later.");
       }

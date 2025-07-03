@@ -99,11 +99,11 @@ export default function BasicTableOne() {
           setBanError(
             errJson.detail || errJson.title || errText || "Failed to ban user."
           );
-        } catch (e) {
+        } catch  {
           setBanError(errText || "Failed to ban user.");
         }
       }
-    } catch (e) {
+    } catch  {
       setBanError("Network error.");
     } finally {
       setBanLoading(false);

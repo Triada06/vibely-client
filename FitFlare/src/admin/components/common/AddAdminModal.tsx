@@ -74,7 +74,7 @@ export default function AddAdminModal({
           setError(errText || "An unknown error occurred.");
         }
       }
-    } catch (e) {
+    } catch  {
       setError("Network error during search.");
     } finally {
       setLoading(false);
@@ -104,7 +104,7 @@ export default function AddAdminModal({
         const errText = await res.text();
         setError(errText || "Failed to promote user.");
       }
-    } catch (e) {
+    } catch {
       setError("Network error during promotion.");
     } finally {
       setPromotingId(null);

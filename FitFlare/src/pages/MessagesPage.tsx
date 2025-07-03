@@ -392,7 +392,7 @@ export default function MessagesPage() {
     const token = localStorage.getItem("token");
     if (!token) return;
     const callCallbacks: CallHubCallbacks = {
-      onIncomingCall: (callerId) => {
+      onIncomingCall: () => {
         // Do nothing here, wait for offer to set the correct type
       },
       onReceiveOffer: (userId, offer, isVideoCall) => {
@@ -419,13 +419,13 @@ export default function MessagesPage() {
             await peerConnectionRef.current.addIceCandidate(
               new RTCIceCandidate(JSON.parse(candidate))
             );
-          } catch (err) {
+          } catch {
             // ignore
           }
         }
         setCallStatus("ICE candidate exchanged");
       },
-      onCallEnded: (userId) => {
+      onCallEnded: () => {
         setCallStatus("Call ended");
         setCallStep("ended");
         setCallInProgress(null);

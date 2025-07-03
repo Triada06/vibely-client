@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
-import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import {  useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link, useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 import { useProfileStore } from "../../../store/profileStore";
 import { useAuthStore } from "../../../store/authStore";
 

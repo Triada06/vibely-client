@@ -86,16 +86,11 @@ const StoryModal: React.FC<StoryModalProps> = ({
       if (!isOpen || stories.length === 0) return;
       const currentStory = stories[currentIndex];
       if (!currentUserId || currentStory.authorId === currentUserId) return;
-      try {
-        const token = localStorage.getItem("token");
-        await fetch(
-          `https://localhost:7014/api/story/${currentStory.id}/view`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-      } catch {}
+      const token = localStorage.getItem("token");
+      await fetch(`https://localhost:7014/api/story/${currentStory.id}/view`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
     };
     markAsViewed();
   }, [isOpen, currentIndex, currentUserId, stories]);

@@ -193,7 +193,7 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
       } else {
         setError("Failed to take down post.");
       }
-    } catch (err) {
+    } catch {
       setError("Error taking down post.");
     } finally {
       setTakingDown(false);
@@ -220,7 +220,7 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
       } else {
         setError("Failed to delete comment.");
       }
-    } catch (err) {
+    } catch  {
       setError("Error deleting comment.");
     } finally {
       setDeletingCommentId(null);

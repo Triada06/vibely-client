@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHeart,
   faComment,
-  faPaperPlane,
   faBookmark,
   faChevronLeft,
   faChevronRight,
@@ -682,7 +681,7 @@ export default function PostModal({
 
     // Find the comment first to check its current like status
     const findComment = (comments: Comment[]): Comment | null => {
-      for (let comment of comments) {
+      for (const comment of comments) {
         if (comment.id === commentId) {
           return comment;
         }

@@ -40,7 +40,6 @@ export default function NotificationsPage() {
         (n) => n.postId && !postDetailsFetched.current[n.postId]
       );
       for (const n of toFetch) {
-        try {
           const response = await fetch(
             `https://localhost:7014/api/post/${n.postId}`,
             {
@@ -58,7 +57,6 @@ export default function NotificationsPage() {
             }));
             postDetailsFetched.current[n.postId!] = true;
           }
-        } catch {}
       }
     };
     if (token && notifications.length > 0) fetchDetails();

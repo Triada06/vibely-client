@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useUserStore } from "../store/storeAdmin";
 import { usePostStore } from "../../store/appPostsStore";
-import { AlertIcon, ListIcon } from "../icons";
 import {
   BannedUsersStatisticsChart,
   UploadedPostsStatisticsChart,
@@ -13,8 +12,8 @@ interface DashboardMonthlyStats {
 }
 
 export default function DashBoard() {
-  const { users, fetchUsers } = useUserStore();
-  const { posts, fetchPosts } = usePostStore();
+  const { fetchUsers } = useUserStore();
+  const { fetchPosts } = usePostStore();
   const [stats, setStats] = useState<DashboardMonthlyStats | null>(null);
   const [loading, setLoading] = useState(true);
 

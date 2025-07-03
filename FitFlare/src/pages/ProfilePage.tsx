@@ -12,10 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useProfileStore } from "../store/profileStore";
 import PostModal from "../components/PostModal";
 import { useAuthStore } from "../store/authStore";
-import type {
-  Post,
-  SavedPost,
-} from "../components/PostModal";
+import type { Post, SavedPost } from "../components/PostModal";
 import StoryModal, { StoryItem } from "../components/StoryModal";
 
 interface ProfileData {
@@ -65,17 +62,15 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchStories = async () => {
       if (!profile?.id || !token) return;
-      try {
-        const response = await fetch(
-          `https://localhost:7014/api/appuser/${profile.id}/stories`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (!response.ok) return;
-        const data = await response.json();
-        setProfileStories(data);
-      } catch {}
+      const response = await fetch(
+        `https://localhost:7014/api/appuser/${profile.id}/stories`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!response.ok) return;
+      const data = await response.json();
+      setProfileStories(data);
     };
     fetchStories();
   }, [profile?.id, token]);

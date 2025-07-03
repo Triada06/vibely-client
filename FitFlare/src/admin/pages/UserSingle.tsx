@@ -73,7 +73,7 @@ export default function UserSinglePage() {
       } else {
         setUser(null);
       }
-    } catch (error) {
+    } catch  {
       setUser(null);
     } finally {
       setLoading(false);
@@ -122,8 +122,9 @@ export default function UserSinglePage() {
       if (res.ok) {
         setPosts((prev) => prev.filter((p) => p.id !== postId));
       }
-    } catch (err) {
-      // Optionally show error
+    } catch  {
+      console.log("didnt work");
+      
     } finally {
       setDeletingPostId(null);
     }
@@ -151,7 +152,7 @@ export default function UserSinglePage() {
         const errorText = await res.text();
         alert(`Failed to unban: ${errorText}`);
       }
-    } catch (err) {
+    } catch  {
       alert("An error occurred while unbanning.");
     }
   };
@@ -195,11 +196,11 @@ export default function UserSinglePage() {
               errText ||
               "Failed to update ban."
           );
-        } catch (e) {
+        } catch  {
           setBanError(errText || "Failed to update ban.");
         }
       }
-    } catch (e) {
+    } catch  {
       setBanError("Network error.");
     } finally {
       setBanLoading(false);
