@@ -18,7 +18,7 @@ export default function DashBoard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUsers(1, "", "asc");
+    fetchUsers(1, "", "asc",10);
     fetchPosts();
     const fetchStats = async () => {
       setLoading(true);

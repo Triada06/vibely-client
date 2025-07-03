@@ -8,7 +8,7 @@ import {
   faPhone,
   faVideo,
 } from "@fortawesome/free-solid-svg-icons";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   startConnection,
   sendMessage,
@@ -405,7 +405,7 @@ export default function MessagesPage() {
         );
         pendingOfferRef.current = offer;
       },
-      onReceiveAnswer: async (userId, answer) => {
+      onReceiveAnswer: async ( answer) => {
         setCallStatus("Connected");
         setCallStep("connected");
         if (peerConnectionRef.current) {
@@ -413,7 +413,7 @@ export default function MessagesPage() {
           await peerConnectionRef.current.setRemoteDescription(answerDesc);
         }
       },
-      onReceiveIceCandidate: async (userId, candidate) => {
+      onReceiveIceCandidate: async (candidate) => {
         if (peerConnectionRef.current && candidate) {
           try {
             await peerConnectionRef.current.addIceCandidate(

@@ -10,13 +10,6 @@ interface User {
   posts: number;
 }
 
-interface FetchParams {
-  page?: number;
-  searchText?: string;
-  sort?: string;
-  pageSize?: number;
-}
-
 interface UserStore {
   users: User[];
   fetchUsers: (

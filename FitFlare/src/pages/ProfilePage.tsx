@@ -12,22 +12,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useProfileStore } from "../store/profileStore";
 import PostModal from "../components/PostModal";
 import { useAuthStore } from "../store/authStore";
-import type { Post, SavedPost } from "../components/PostModal";
+import type {
+  Post as ModalPost,
+  SavedPost as ModalSavedPost,
+} from "../components/PostModal";
 import StoryModal, { StoryItem } from "../components/StoryModal";
-
-interface ProfileData {
-  isPrivate: boolean;
-  id: string;
-  userName: string;
-  fullName: string;
-  postsCount: number;
-  bio: string;
-  profilePictureUri: string;
-  followersCount: number;
-  followingCount: number;
-  posts: Post[];
-  savedPosts: SavedPost[];
-}
 
 interface Follower {
   id: string;
@@ -164,6 +153,45 @@ export default function ProfilePage() {
       navigate("/uploadpost?tab=story");
     }
   };
+
+  // Helper to map posts to PostModal type
+  function mapToModalPost(post: any): ModalPost {
+    return {
+      id: String(post.id),
+      mediaUri: post.mediaUri,
+      mediaType: post.mediaType,
+      likeCount: post.likeCount,
+      commentCount: post.commentCount,
+      description: post.description,
+      comments: post.comments ?? [],
+      postedWhen: post.postedWhen,
+      hashTags: post.hashTags ?? [],
+      isLikedByUser: post.isLikedByUser ?? false,
+      postedById: post.postedById ?? profile?.id ?? "",
+      authorProfilePicUri:
+        post.authorProfilePicUri ?? profile?.profilePictureUri ?? null,
+      authorUserName: post.authorUserName ?? profile?.userName ?? "",
+    };
+  }
+
+  function mapToModalSavedPost(post: any): ModalSavedPost {
+    return {
+      id: String(post.id),
+      mediaUri: post.mediaUri,
+      mediaType: post.mediaType,
+      likeCount: post.likeCount,
+      commentCount: post.commentCount,
+      description: post.description,
+      comments: post.comments ?? [],
+      postedWhen: post.postedWhen,
+      hashTags: post.hashTags ?? [],
+      isLikedByUser: post.isLikedByUser ?? false,
+      postedById: post.postedById ?? profile?.id ?? "",
+      authorProfilePicUri:
+        post.authorProfilePicUri ?? profile?.profilePictureUri ?? null,
+      authorUserName: post.authorUserName ?? profile?.userName ?? "",
+    };
+  }
 
   return (
     <section className="relative max-w-5xl mx-auto md:ml-82 px-4 md:px-8  pb-20 h-full min-h-screen">
@@ -386,16 +414,28 @@ export default function ProfilePage() {
               userName: profile.userName,
               postsCount: profile.postsCount,
               bio: profile.bio,
-              posts: profile.posts,
+              posts: profile.posts.map(mapToModalPost),
             }}
-            posts={activeTab === "posts" ? profile.posts : profile.savedPosts}
-            savedPosts={profile.savedPosts as SavedPost[]}
+            posts={
+              activeTab === "posts" ? profile.posts.map(mapToModalPost) : []
+            }
+            savedPosts={profile.savedPosts.map(mapToModalSavedPost)}
             initialPostIndex={selectedPostIndex}
             isOpen={selectedPostIndex !== null}
             onClose={handleCloseModal}
             setSavedPosts={(posts) => {
               if (profile) {
-                profile.savedPosts = posts;
+                // Map back to store shape if needed, or just assign as is
+                profile.savedPosts = posts.map((p) => ({
+                  id: Number(p.id),
+                  mediaUri: p.mediaUri,
+                  mediaType: p.mediaType,
+                  likeCount: p.likeCount,
+                  commentCount: p.commentCount,
+                  description: p.description,
+                  postedWhen: p.postedWhen,
+                  hashTags: p.hashTags,
+                }));
               }
             }}
             isOwnProfile={true}

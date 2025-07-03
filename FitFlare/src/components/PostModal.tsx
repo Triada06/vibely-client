@@ -698,7 +698,6 @@ export default function PostModal({
 
     // Optimistically update the UI
     const previousLikeState = comment.isLikedByUser;
-    const previousLikeCount = comment.commentLikeCount;
 
     // Create a new array to trigger re-render
     const updateCommentInArray = (comments: Comment[]): Comment[] => {
