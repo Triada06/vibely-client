@@ -18,13 +18,13 @@ export default function DashBoard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUsers(1, "", "asc",10);
+    fetchUsers(1, "", "asc", 10);
     fetchPosts();
     const fetchStats = async () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(
-        "https://localhost:7014/api/admin/dashboard/monthly",
+        `${import.meta.env.VITE_API_URL}/admin/dashboard/monthly`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

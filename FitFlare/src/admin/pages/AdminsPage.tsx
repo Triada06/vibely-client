@@ -34,7 +34,7 @@ export default function AdminsPage() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://localhost:7014/api/admin/admins", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/admins`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -67,7 +67,9 @@ export default function AdminsPage() {
     setPromotionMessage(null);
     try {
       const res = await fetch(
-        `https://localhost:7014/api/admin/admins/${selectedAdmin.id}/make-app-owner`,
+        `${import.meta.env.VITE_API_URL}/admin/admins/${
+          selectedAdmin.id
+        }/make-app-owner`,
         {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
@@ -99,7 +101,9 @@ export default function AdminsPage() {
     ) {
       try {
         const res = await fetch(
-          `https://localhost:7014/api/admin/admins/${adminId}/remove-admin`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/admin/admins/${adminId}/remove-admin`,
           {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },

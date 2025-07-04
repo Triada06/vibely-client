@@ -71,7 +71,7 @@ const StoryModal: React.FC<StoryModalProps> = ({
     // Only fetch if not already loaded for this story
     setLoadingViewers(true);
     const token = localStorage.getItem("token");
-    fetch(`https://localhost:7014/api/story/${currentStory.id}/viewers`, {
+    fetch(`${import.meta.env.VITE_API_URL}/story/${currentStory.id}/viewers`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => (res.ok ? res.json() : []))
@@ -87,10 +87,13 @@ const StoryModal: React.FC<StoryModalProps> = ({
       const currentStory = stories[currentIndex];
       if (!currentUserId || currentStory.authorId === currentUserId) return;
       const token = localStorage.getItem("token");
-      await fetch(`https://localhost:7014/api/story/${currentStory.id}/view`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await fetch(
+        `${import.meta.env.VITE_API_URL}/story/${currentStory.id}/view`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
     };
     markAsViewed();
   }, [isOpen, currentIndex, currentUserId, stories]);
@@ -115,7 +118,7 @@ const StoryModal: React.FC<StoryModalProps> = ({
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `https://localhost:7014/api/story/${currentStory.id}`,
+        `${import.meta.env.VITE_API_URL}/story/${currentStory.id}`,
         {
           method: "DELETE",
           headers: {

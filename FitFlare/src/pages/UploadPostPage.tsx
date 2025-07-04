@@ -81,7 +81,7 @@ export default function UploadpostPage() {
     setIsAnalyzing(true);
 
     try {
-      const res = await fetch("https://localhost:7014/api/post", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/post`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -174,7 +174,7 @@ export default function UploadpostPage() {
     formData.append("media", selectedFile);
     hashtags.forEach((tag) => formData.append("hashtags", tag));
 
-    const res = await fetch("https://localhost:7014/api/post", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/post`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -257,7 +257,7 @@ export default function UploadpostPage() {
     formData.append("media", storyFile);
     setStoryUploading(true);
     try {
-      const res = await fetch("https://localhost:7014/api/story", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/story`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -122,7 +122,7 @@ export default function UserProfilePage() {
       try {
         setLoading(true);
         const response = await fetch(
-          `https://localhost:7014/api/appuser/${id}`,
+          `${import.meta.env.VITE_API_URL}/appuser/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -153,7 +153,7 @@ export default function UserProfilePage() {
       if (!id || !token || !currentUserProfile?.id) return;
       try {
         const response = await fetch(
-          `https://localhost:7014/api/follow/${id}/followers`,
+          `${import.meta.env.VITE_API_URL}/follow/${id}/followers`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -178,7 +178,9 @@ export default function UserProfilePage() {
         setIsFollowing(isFollowed);
 
         const requestResponse = await fetch(
-          `https://localhost:7014/api/notification/pending-follow-request/${id}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/notification/pending-follow-request/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -207,7 +209,7 @@ export default function UserProfilePage() {
       if (!profile?.id || !token) return;
       try {
         const response = await fetch(
-          `https://localhost:7014/api/appuser/${profile.id}/stories`,
+          `${import.meta.env.VITE_API_URL}/appuser/${profile.id}/stories`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -217,7 +219,6 @@ export default function UserProfilePage() {
         setProfileStories(data);
       } catch {
         console.log("Error fetching stories");
-        
       }
     };
     fetchStories();
@@ -244,7 +245,7 @@ export default function UserProfilePage() {
 
       try {
         const response = await fetch(
-          "https://localhost:7014/api/notification",
+          `${import.meta.env.VITE_API_URL}/notification`,
           {
             method: "POST",
             headers: {
@@ -268,7 +269,7 @@ export default function UserProfilePage() {
       }
     } else {
       const method = isFollowing ? "DELETE" : "POST";
-      const endpoint = `https://localhost:7014/api/follow/${id}`;
+      const endpoint = `${import.meta.env.VITE_API_URL}/follow/${id}`;
 
       try {
         const response = await fetch(endpoint, {
@@ -309,7 +310,7 @@ export default function UserProfilePage() {
     try {
       setLoadingFollowers(true);
       const response = await fetch(
-        `https://localhost:7014/api/follow/${id}/followers`,
+        `${import.meta.env.VITE_API_URL}/follow/${id}/followers`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -340,7 +341,7 @@ export default function UserProfilePage() {
     try {
       setLoadingFollowings(true);
       const response = await fetch(
-        `https://localhost:7014/api/follow/${id}/followings`,
+        `${import.meta.env.VITE_API_URL}/follow/${id}/followings`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -380,7 +381,7 @@ export default function UserProfilePage() {
     if (!id || !token) return;
     try {
       const response = await fetch(
-        `https://localhost:7014/api/follow/${id}/followers/${followerId}`,
+        `${import.meta.env.VITE_API_URL}/follow/${id}/followers/${followerId}`,
         {
           method: "DELETE",
           headers: {
@@ -414,7 +415,9 @@ export default function UserProfilePage() {
     if (!id || !token) return;
     try {
       const response = await fetch(
-        `https://localhost:7014/api/follow/${id}/followings/${followingId}`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/follow/${id}/followings/${followingId}`,
         {
           method: "DELETE",
           headers: {

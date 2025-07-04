@@ -18,7 +18,6 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
-
   const validateEmail = (value: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!value.trim()) {
@@ -83,13 +82,16 @@ export default function SignUpPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("https://localhost:7014/api/appuser/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userName, email, passWord }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/appuser/signup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userName, email, passWord }),
+        }
+      );
 
       if (!res.ok) {
         const errorData = await res.json();

@@ -1,6 +1,4 @@
-import {
-  faCheckCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useState } from "react";
 import { useProfileStore } from "../store/profileStore";
@@ -122,7 +120,7 @@ export default function SettingsPage() {
     setIsProfilePrivate(newPrivacyState);
     try {
       const response = await fetch(
-        "https://localhost:7014/api/appuser/me/changeprivacy",
+        `${import.meta.env.VITE_API_URL}/appuser/me/changeprivacy`,
         {
           method: "PUT",
           headers: {
@@ -155,7 +153,7 @@ export default function SettingsPage() {
 
     try {
       const response = await fetch(
-        "https://localhost:7014/api/appuser/me/verifypassword",
+        `${import.meta.env.VITE_API_URL}/appuser/me/verifypassword`,
         {
           method: "POST",
           headers: {
@@ -217,7 +215,7 @@ export default function SettingsPage() {
 
     try {
       const response = await fetch(
-        "https://localhost:7014/api/appuser/me/security/changepassword",
+        `${import.meta.env.VITE_API_URL}/appuser/me/security/changepassword`,
         {
           method: "PUT",
           headers: {
@@ -277,7 +275,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch("/api/appuser/me/verifypassword", {
+      const response = await fetch(`/api/appuser/me/verifypassword`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -78,9 +78,9 @@ export default function SearchPage() {
     const searchUsers = async (query: string) => {
       try {
         const response = await fetch(
-          `https://localhost:7014/api/appuser/search?searchText=${encodeURIComponent(
-            query
-          )}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/appuser/search?searchText=${encodeURIComponent(query)}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -104,9 +104,9 @@ export default function SearchPage() {
     const searchTags = async (query: string) => {
       try {
         const response = await fetch(
-          `https://localhost:7014/api/tag/search?searchText=${encodeURIComponent(
-            query
-          )}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/tag/search?searchText=${encodeURIComponent(query)}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -158,7 +158,7 @@ export default function SearchPage() {
   const fetchTagPosts = async (tagId: string) => {
     try {
       const response = await fetch(
-        `https://localhost:7014/api/post/bytag/${tagId}`,
+        `${import.meta.env.VITE_API_URL}/post/bytag/${tagId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

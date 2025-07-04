@@ -80,7 +80,7 @@ export default function BasicTableOne() {
     setBanError(null);
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("https://localhost:7014/api/admin/ban", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/ban`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,11 +99,11 @@ export default function BasicTableOne() {
           setBanError(
             errJson.detail || errJson.title || errText || "Failed to ban user."
           );
-        } catch  {
+        } catch {
           setBanError(errText || "Failed to ban user.");
         }
       }
-    } catch  {
+    } catch {
       setBanError("Network error.");
     } finally {
       setBanLoading(false);

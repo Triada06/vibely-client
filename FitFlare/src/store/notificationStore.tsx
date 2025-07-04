@@ -31,11 +31,14 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch("https://localhost:7014/api/notification", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/notification`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
@@ -54,7 +57,9 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       if (!token) return;
 
       const response = await fetch(
-        `https://localhost:7014/api/notification/${notificationId}/markasread`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/notification/${notificationId}/markasread`,
         {
           method: "PUT",
           headers: {
@@ -83,7 +88,7 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       if (!token) return;
 
       const response = await fetch(
-        "https://localhost:7014/api/notification/markallasread",
+        `${import.meta.env.VITE_API_URL}/notification/markallasread`,
         {
           method: "PUT",
           headers: {

@@ -36,7 +36,7 @@ export const useUserStore = create<UserStore>((set) => ({
       pageSize: pageSize.toString(),
     });
     const res = await fetch(
-      `https://localhost:7014/api/admin/appuser?${query}`,
+      `${import.meta.env.VITE_API_URL}/admin/appuser?${query}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

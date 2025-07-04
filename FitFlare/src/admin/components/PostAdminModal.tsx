@@ -83,7 +83,7 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/post/${post.id}?page=${page}`,
+        `${import.meta.env.VITE_API_URL}/comment/post/${post.id}?page=${page}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -120,7 +120,9 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/${commentId}/replies?postId=${post.id}&page=${page}`,
+        `${import.meta.env.VITE_API_URL}/comment/${commentId}/replies?postId=${
+          post.id
+        }&page=${page}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -182,10 +184,13 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
     setSuccess(null);
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`https://localhost:7014/api/post/${post.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/post/${post.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         setSuccess("Post taken down successfully.");
         if (onPostTakenDown) onPostTakenDown(post.id);
@@ -208,7 +213,7 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/${commentId}`,
+        `${import.meta.env.VITE_API_URL}/comment/${commentId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -220,7 +225,7 @@ const PostAdminModal: React.FC<PostAdminModalProps> = ({
       } else {
         setError("Failed to delete comment.");
       }
-    } catch  {
+    } catch {
       setError("Error deleting comment.");
     } finally {
       setDeletingCommentId(null);

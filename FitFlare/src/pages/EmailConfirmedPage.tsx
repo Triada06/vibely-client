@@ -22,7 +22,9 @@ export default function EmailConfirmedPage() {
         const encodedToken = encodeURIComponent(token ?? "");
 
         const response = await fetch(
-          `https://localhost:7014/api/appuser/${userId}/confirmemail?token=${encodedToken}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/appuser/${userId}/confirmemail?token=${encodedToken}`
         );
         console.log(token);
 

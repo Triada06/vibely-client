@@ -88,11 +88,14 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await fetch("https://localhost:7014/api/post/feed", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/post/feed`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch posts");
         }
@@ -111,7 +114,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchStories = async () => {
       try {
-        const response = await fetch("https://localhost:7014/api/story", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/story`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -145,7 +148,7 @@ export default function HomePage() {
       console.log("Fetching my stories for profile ID:", profile.id);
       try {
         const response = await fetch(
-          `https://localhost:7014/api/appuser/${profile.id}/stories`,
+          `${import.meta.env.VITE_API_URL}/appuser/${profile.id}/stories`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -223,7 +226,7 @@ export default function HomePage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7014/api/post/${postId}/${
+        `${import.meta.env.VITE_API_URL}/post/${postId}/${
           isLiked ? "unlike" : "like"
         }`,
         {
@@ -257,7 +260,7 @@ export default function HomePage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7014/api/post/${postId}/${
+        `${import.meta.env.VITE_API_URL}/post/${postId}/${
           isSaved ? "unsave" : "save"
         }`,
         {
@@ -346,7 +349,7 @@ export default function HomePage() {
       if (profile && authorId === profile.id) {
         // Fetch my own stories using the user-specific API
         const response = await fetch(
-          `https://localhost:7014/api/appuser/${profile.id}/stories`,
+          `${import.meta.env.VITE_API_URL}/appuser/${profile.id}/stories`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -357,7 +360,7 @@ export default function HomePage() {
         userStories = await response.json();
       } else {
         // Fetch all stories and filter by authorId
-        const response = await fetch("https://localhost:7014/api/story", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/story`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

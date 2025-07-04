@@ -22,7 +22,9 @@ export default function ConfirmOwnerTransferPage() {
     const confirmTransfer = async () => {
       try {
         const response = await fetch(
-          `https://localhost:7014/api/admin/admins/confirm-owner-transfer?token=${transferToken}`,
+          `${
+            import.meta.env.VITE_API_URL
+          }/admin/admins/confirm-owner-transfer?token=${transferToken}`,
           {
             method: "GET",
           }

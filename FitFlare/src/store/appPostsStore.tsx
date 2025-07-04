@@ -23,7 +23,7 @@ export const usePostStore = create<PostStore>((set) => ({
   loading: false,
 
   fetchPosts: async () => {
-    const res = await fetch(`https://localhost:7014/api/appuser?page=1`); // Replace with your endpoint
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/appuser?page=1`); // Replace with your endpoint
     const data = await res.json();
     set({ posts: data });
   },

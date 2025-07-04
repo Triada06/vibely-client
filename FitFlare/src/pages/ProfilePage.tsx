@@ -52,7 +52,7 @@ export default function ProfilePage() {
     const fetchStories = async () => {
       if (!profile?.id || !token) return;
       const response = await fetch(
-        `https://localhost:7014/api/appuser/${profile.id}/stories`,
+        `${import.meta.env.VITE_API_URL}/appuser/${profile.id}/stories`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -77,7 +77,7 @@ export default function ProfilePage() {
     try {
       setLoadingFollowers(true);
       const response = await fetch(
-        `https://localhost:7014/api/follow/${profile.id}/followers`,
+        `${import.meta.env.VITE_API_URL}/follow/${profile.id}/followers`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -108,7 +108,7 @@ export default function ProfilePage() {
     try {
       setLoadingFollowings(true);
       const response = await fetch(
-        `https://localhost:7014/api/follow/${profile.id}/followings`,
+        `${import.meta.env.VITE_API_URL}/follow/${profile.id}/followings`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

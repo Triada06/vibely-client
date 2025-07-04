@@ -153,7 +153,9 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/post/${currentPost.id}?page=${page}`,
+        `${import.meta.env.VITE_API_URL}/comment/post/${
+          currentPost.id
+        }?page=${page}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -217,7 +219,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment`, // Updated API endpoint
+        `${import.meta.env.VITE_API_URL}/comment`, // Updated API endpoint
         {
           method: "POST",
           headers: {
@@ -285,8 +287,6 @@ export default function PostModal({
     setCurrentIndex((prev) => (prev < posts.length - 1 ? prev + 1 : 0));
   };
 
- 
-
   const handleLike = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -300,7 +300,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}/like`,
+        `${import.meta.env.VITE_API_URL}/post/${currentPost.id}/like`,
         {
           method: "PUT",
           headers: {
@@ -336,7 +336,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}/unlike`,
+        `${import.meta.env.VITE_API_URL}/post/${currentPost.id}/unlike`,
         {
           method: "PUT",
           headers: {
@@ -368,7 +368,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}/save`,
+        `${import.meta.env.VITE_API_URL}/post/${currentPost.id}/save`,
         {
           method: "PUT",
           headers: {
@@ -398,7 +398,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}/unsave`,
+        `${import.meta.env.VITE_API_URL}/post/${currentPost.id}/unsave`,
         {
           method: "PUT",
           headers: {
@@ -428,7 +428,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}`,
+        `${import.meta.env.VITE_API_URL}/post/${currentPost.id}`,
         {
           method: "PUT",
           headers: {
@@ -463,7 +463,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/post/${currentPost.id}`,
+        `${import.meta.env.VITE_API_URL}/post/${currentPost.id}`,
         {
           method: "DELETE",
           headers: {
@@ -497,7 +497,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/${commentId}`,
+        `${import.meta.env.VITE_API_URL}/comment/${commentId}`,
         {
           method: "DELETE",
           headers: {
@@ -532,7 +532,7 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/${commentId}/addreply`,
+        `${import.meta.env.VITE_API_URL}/comment/${commentId}/addreply`,
         {
           method: "POST",
           headers: {
@@ -600,7 +600,9 @@ export default function PostModal({
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/comment/${commentId}/replies?postId=${currentPost.id}&page=${page}`,
+        `${import.meta.env.VITE_API_URL}/comment/${commentId}/replies?postId=${
+          currentPost.id
+        }&page=${page}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -727,7 +729,7 @@ export default function PostModal({
       // Use the appropriate endpoint based on the current like state
       const endpoint = previousLikeState ? "unlike" : "like";
       const res = await fetch(
-        `https://localhost:7014/api/comment/${commentId}/${endpoint}`,
+        `${import.meta.env.VITE_API_URL}/comment/${commentId}/${endpoint}`,
         {
           method: "PUT",
           headers: {

@@ -59,7 +59,7 @@ export default function ProfileEditPage() {
       }
 
       const response = await fetch(
-        `https://localhost:7014/api/appuser/me/editprofile`,
+        `${import.meta.env.VITE_API_URL}/appuser/me/editprofile`,
         {
           method: "PUT",
           headers: {

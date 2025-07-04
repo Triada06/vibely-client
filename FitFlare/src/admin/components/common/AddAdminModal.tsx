@@ -40,7 +40,7 @@ export default function AddAdminModal({
 
     try {
       const res = await fetch(
-        "https://localhost:7014/api/admin/admins/find-by-email",
+        `${import.meta.env.VITE_API_URL}/admin/admins/find-by-email`,
         {
           method: "POST",
           headers: {
@@ -74,7 +74,7 @@ export default function AddAdminModal({
           setError(errText || "An unknown error occurred.");
         }
       }
-    } catch  {
+    } catch {
       setError("Network error during search.");
     } finally {
       setLoading(false);
@@ -86,7 +86,9 @@ export default function AddAdminModal({
     setError(null);
     try {
       const res = await fetch(
-        `https://localhost:7014/api/admin/admins/${userId}/promote-to-admin`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/admin/admins/${userId}/promote-to-admin`,
         {
           method: "PUT",
           headers: {

@@ -40,23 +40,23 @@ export default function NotificationsPage() {
         (n) => n.postId && !postDetailsFetched.current[n.postId]
       );
       for (const n of toFetch) {
-          const response = await fetch(
-            `https://localhost:7014/api/post/${n.postId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          if (response.ok) {
-            const data = await response.json();
-            setPostDetails((prev) => ({
-              ...prev,
-              [n.postId!]: {
-                mediaType: data.mediaType,
-                mediaUri: data.mediaUri,
-              },
-            }));
-            postDetailsFetched.current[n.postId!] = true;
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/post/${n.postId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
           }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setPostDetails((prev) => ({
+            ...prev,
+            [n.postId!]: {
+              mediaType: data.mediaType,
+              mediaUri: data.mediaUri,
+            },
+          }));
+          postDetailsFetched.current[n.postId!] = true;
+        }
       }
     };
     if (token && notifications.length > 0) fetchDetails();
@@ -83,7 +83,7 @@ export default function NotificationsPage() {
       }
       try {
         const response = await fetch(
-          `https://localhost:7014/api/post/${notification.postId}`,
+          `${import.meta.env.VITE_API_URL}/post/${notification.postId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -137,7 +137,9 @@ export default function NotificationsPage() {
     try {
       // 1. Accept the follow request (use the existing follow API)
       const followResponse = await fetch(
-        `https://localhost:7014/api/follow/${triggerUserId}/acceptfollowrequest`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/follow/${triggerUserId}/acceptfollowrequest`,
         {
           method: "POST",
           headers: {
@@ -154,7 +156,7 @@ export default function NotificationsPage() {
 
       // 2. Delete the notification
       const deleteResponse = await fetch(
-        `https://localhost:7014/api/notification/${notificationId}`,
+        `${import.meta.env.VITE_API_URL}/notification/${notificationId}`,
         {
           method: "DELETE",
           headers: {
@@ -190,7 +192,7 @@ export default function NotificationsPage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7014/api/notification/${notificationId}`,
+        `${import.meta.env.VITE_API_URL}/notification/${notificationId}`,
         {
           method: "DELETE",
           headers: {

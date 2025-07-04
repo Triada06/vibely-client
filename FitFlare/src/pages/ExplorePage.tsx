@@ -73,7 +73,7 @@ export default function ExplorePage() {
       if (!token) return;
 
       const response = await fetch(
-        `https://localhost:7014/api/post?page=${pageNum}`,
+        `${import.meta.env.VITE_API_URL}/post?page=${pageNum}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -177,9 +177,9 @@ export default function MessagesPage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7014/api/message?searchText=${encodeURIComponent(
-          text
-        )}`,
+        `${
+          import.meta.env.VITE_API_URL
+        }/message?searchText=${encodeURIComponent(text)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -228,7 +228,7 @@ export default function MessagesPage() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `https://localhost:7014/api/chat/with/${userId}`,
+        `${import.meta.env.VITE_API_URL}/chat/with/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -258,7 +258,7 @@ export default function MessagesPage() {
   const fetchChats = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("https://localhost:7014/api/chat", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/chat`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -405,7 +405,7 @@ export default function MessagesPage() {
         );
         pendingOfferRef.current = offer;
       },
-      onReceiveAnswer: async ( answer) => {
+      onReceiveAnswer: async (answer) => {
         setCallStatus("Connected");
         setCallStep("connected");
         if (peerConnectionRef.current) {
@@ -615,7 +615,7 @@ export default function MessagesPage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7014/api/message/${messageId}`,
+        `${import.meta.env.VITE_API_URL}/message/${messageId}`,
         {
           method: "DELETE",
           headers: {

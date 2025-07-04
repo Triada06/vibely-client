@@ -30,13 +30,16 @@ export default function Authentication() {
 
     try {
       setLoading(true);
-      const res = await fetch("https://localhost:7014/api/appuser/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ emailOrUserName, passWord }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/appuser/signin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ emailOrUserName, passWord }),
+        }
+      );
 
       if (!res.ok) {
         const errorBody = await res.json().catch(() => null);
@@ -67,7 +70,7 @@ export default function Authentication() {
     setForgotError("");
     try {
       const res = await fetch(
-        "https://localhost:7014/api/account/forgot-password",
+        `${import.meta.env.VITE_API_URL}/account/forgot-password`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -17,7 +17,6 @@ export default function Footer({ profilePicUri }: { profilePicUri?: string }) {
   const { notifications, fetchNotifications } = useNotificationStore();
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  // Fetch notifications on mount to keep unread count up-to-date
   useEffect(() => {
     fetchNotifications();
     // Optionally, you could poll every X seconds for real-time updates

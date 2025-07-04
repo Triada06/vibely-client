@@ -58,11 +58,14 @@ export const useProfileStore = create<ProfileStore>((set) => ({
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`https://localhost:7014/api/appuser/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/appuser/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     const data = await res.json();
     console.log(data);

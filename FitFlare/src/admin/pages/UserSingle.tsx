@@ -61,7 +61,7 @@ export default function UserSinglePage() {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        `https://localhost:7014/api/admin/appuser/${id}`,
+        `${import.meta.env.VITE_API_URL}/admin/appuser/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -73,7 +73,7 @@ export default function UserSinglePage() {
       } else {
         setUser(null);
       }
-    } catch  {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -84,14 +84,15 @@ export default function UserSinglePage() {
     fetchUser();
   }, [fetchUser]);
 
-  // When a post is selected, fetch its comments
   useEffect(() => {
     const fetchComments = async () => {
       if (selectedPost) {
         const token = localStorage.getItem("token");
         try {
           const res = await fetch(
-            `https://localhost:7014/api/comment/post/${selectedPost.id}?page=1`,
+            `${import.meta.env.VITE_API_URL}/comment/post/${
+              selectedPost.id
+            }?page=1`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (res.ok) {
@@ -115,16 +116,18 @@ export default function UserSinglePage() {
     setDeletingPostId(postId);
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`https://localhost:7014/api/post/${postId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/post/${postId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         setPosts((prev) => prev.filter((p) => p.id !== postId));
       }
-    } catch  {
+    } catch {
       console.log("didnt work");
-      
     } finally {
       setDeletingPostId(null);
     }
@@ -142,17 +145,20 @@ export default function UserSinglePage() {
 
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`https://localhost:7014/api/admin/ban/${banId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/admin/ban/${banId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.ok) {
         fetchUser(); // Refresh user data
       } else {
         const errorText = await res.text();
         alert(`Failed to unban: ${errorText}`);
       }
-    } catch  {
+    } catch {
       alert("An error occurred while unbanning.");
     }
   };
@@ -171,7 +177,7 @@ export default function UserSinglePage() {
 
     try {
       const res = await fetch(
-        `https://localhost:7014/api/admin/ban/${selectedBan.id}`,
+        `${import.meta.env.VITE_API_URL}/admin/ban/${selectedBan.id}`,
         {
           method: "PUT",
           headers: {
@@ -196,11 +202,11 @@ export default function UserSinglePage() {
               errText ||
               "Failed to update ban."
           );
-        } catch  {
+        } catch {
           setBanError(errText || "Failed to update ban.");
         }
       }
-    } catch  {
+    } catch {
       setBanError("Network error.");
     } finally {
       setBanLoading(false);
