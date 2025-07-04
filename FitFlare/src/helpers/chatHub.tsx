@@ -16,7 +16,7 @@ interface ChatHubCallbacks {
 
 export const startConnection = (token: string, callbacks: ChatHubCallbacks) => {
   connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${import.meta.env.VITE_API_URL}/hubs/chat`, {
+    .withUrl(`${import.meta.env.VITE_API_WS}/chat`, {
       accessTokenFactory: () => token,
     })
     .withAutomaticReconnect()

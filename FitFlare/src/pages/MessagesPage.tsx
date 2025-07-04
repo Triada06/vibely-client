@@ -523,7 +523,6 @@ export default function MessagesPage() {
     return pc;
   };
 
-  // Start a call (mocked)
   const handleStartCall = async (type: "audio" | "video") => {
     if (!selectedConversation) return;
     callUser(selectedConversation);

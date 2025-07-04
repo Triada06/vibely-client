@@ -15,7 +15,7 @@ export const startCallConnection = (
   callbacks: CallHubCallbacks
 ) => {
   connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${import.meta.env.VITE_API_URL}/hubs/call`, {
+    .withUrl(`${import.meta.env.VITE_API_WS}/call`, {
       accessTokenFactory: () => token,
     })
     .withAutomaticReconnect()
