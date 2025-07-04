@@ -302,6 +302,13 @@ export default function MessagesPage() {
   useEffect(() => {
     fetchUser();
     fetchChats();
+
+    // Debug: Check environment variables
+    console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+    console.log(
+      "Current token:",
+      localStorage.getItem("token")?.substring(0, 20) + "..."
+    );
   }, []);
 
   useEffect(() => {
@@ -390,12 +397,28 @@ export default function MessagesPage() {
   // Setup CallHub connection
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      console.error("No token found for CallHub connection");
+      return;
+    }
+
+    console.log(
+      "Setting up CallHub connection with token:",
+      token.substring(0, 20) + "..."
+    );
+
     const callCallbacks: CallHubCallbacks = {
-      onIncomingCall: () => {
+      onIncomingCall: (callerId) => {
+        console.log("Incoming call from:", callerId);
         // Do nothing here, wait for offer to set the correct type
       },
       onReceiveOffer: (userId, offer, isVideoCall) => {
+        console.log(
+          "Received offer from:",
+          userId,
+          "isVideoCall:",
+          isVideoCall
+        );
         const type = isVideoCall ? "video" : "audio";
         lastIncomingCallType.current = type;
         setIncomingCall({ callerId: userId, type });
@@ -405,27 +428,34 @@ export default function MessagesPage() {
         );
         pendingOfferRef.current = offer;
       },
-      onReceiveAnswer: async (answer) => {
+      onReceiveAnswer: async (userId, answer) => {
+        console.log("Received answer from:", userId);
         setCallStatus("Connected");
         setCallStep("connected");
         if (peerConnectionRef.current) {
-          const answerDesc = new RTCSessionDescription(JSON.parse(answer));
-          await peerConnectionRef.current.setRemoteDescription(answerDesc);
+          try {
+            const answerDesc = new RTCSessionDescription(JSON.parse(answer));
+            await peerConnectionRef.current.setRemoteDescription(answerDesc);
+          } catch (error) {
+            console.error("Error setting remote description:", error);
+          }
         }
       },
-      onReceiveIceCandidate: async (candidate) => {
+      onReceiveIceCandidate: async (userId, candidate) => {
+        console.log("Received ICE candidate from:", userId);
         if (peerConnectionRef.current && candidate) {
           try {
             await peerConnectionRef.current.addIceCandidate(
               new RTCIceCandidate(JSON.parse(candidate))
             );
-          } catch {
-            // ignore
+          } catch (error) {
+            console.error("Error adding ICE candidate:", error);
           }
         }
         setCallStatus("ICE candidate exchanged");
       },
-      onCallEnded: () => {
+      onCallEnded: (userId) => {
+        console.log("Call ended with:", userId);
         setCallStatus("Call ended");
         setCallStep("ended");
         setCallInProgress(null);
@@ -471,12 +501,22 @@ export default function MessagesPage() {
           : { audio: true, video: false };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       localStreamRef.current = stream;
+
+      // Set up local video for video calls
       if (type === "video" && localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
-      } else if (type === "audio" && localAudioRef.current) {
-        localAudioRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(console.error);
       }
+
+      // Set up local audio for audio calls
+      if (type === "audio" && localAudioRef.current) {
+        localAudioRef.current.srcObject = stream;
+        localAudioRef.current.play().catch(console.error);
+      }
+
+      console.log("Local media stream started:", type);
     } catch (err) {
+      console.error("Could not access media devices:", err);
       alert("Could not access media devices: " + err);
     }
   };
@@ -487,30 +527,35 @@ export default function MessagesPage() {
     targetUserId: string
   ) => {
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+      ],
     });
+
     // Add local tracks
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current!);
       });
     }
+
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         sendIceCandidate(targetUserId, JSON.stringify(event.candidate));
       }
     };
+
     // Handle remote stream
     pc.ontrack = (event) => {
+      console.log("Received remote track:", event.streams[0]);
       if (!remoteStreamRef.current) {
         remoteStreamRef.current = new MediaStream();
-        if (type === "video" && remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        } else if (type === "audio" && remoteAudioRef.current) {
-          remoteAudioRef.current.srcObject = remoteStreamRef.current;
-        }
       }
+
+      // Add tracks to remote stream
       event.streams[0].getTracks().forEach((track) => {
         if (
           remoteStreamRef.current &&
@@ -519,54 +564,105 @@ export default function MessagesPage() {
           remoteStreamRef.current.addTrack(track);
         }
       });
+
+      // Set up remote video/audio elements
+      if (type === "video" && remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        remoteVideoRef.current.play().catch(console.error);
+      } else if (type === "audio" && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.play().catch(console.error);
+      }
     };
+
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log("Peer connection state:", pc.connectionState);
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log("ICE connection state:", pc.iceConnectionState);
+    };
+
     return pc;
   };
 
   const handleStartCall = async (type: "audio" | "video") => {
     if (!selectedConversation) return;
-    callUser(selectedConversation);
-    setCallModal(type);
-    setCallInProgress({ userId: selectedConversation, type });
-    setCallStatus("Calling...");
-    setCallStep("calling");
-    await startLocalMedia(type);
-    // Create peer connection
-    const pc = createPeerConnection(type, selectedConversation);
-    peerConnectionRef.current = pc;
-    // Create offer
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    // Send offer via SignalR
-    sendOffer(selectedConversation, JSON.stringify(offer), type === "video");
-    setCallStatus("Waiting for answer...");
-    setCallStep("ringing");
+
+    try {
+      console.log("Starting call:", type, "to:", selectedConversation);
+
+      // Start local media first
+      await startLocalMedia(type);
+
+      // Create peer connection
+      const pc = createPeerConnection(type, selectedConversation);
+      peerConnectionRef.current = pc;
+
+      // Create offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Send call notification and offer via SignalR
+      callUser(selectedConversation);
+      sendOffer(selectedConversation, JSON.stringify(offer), type === "video");
+
+      setCallModal(type);
+      setCallInProgress({ userId: selectedConversation, type });
+      setCallStatus("Calling...");
+      setCallStep("calling");
+
+      // Update status after a delay
+      setTimeout(() => {
+        setCallStatus("Waiting for answer...");
+        setCallStep("ringing");
+      }, 1000);
+    } catch (error) {
+      console.error("Error starting call:", error);
+      alert("Failed to start call: " + error);
+    }
   };
 
-  // Accept incoming call (mocked)
+  // Accept incoming call
   const handleAcceptCall = async () => {
     if (incomingCall) {
-      setCallInProgress({
-        userId: incomingCall.callerId,
-        type: incomingCall.type,
-      });
-      setCallModal(incomingCall.type);
-      setCallStatus("Connecting...");
-      setCallStep("connecting");
-      setIncomingCall(null);
-      await startLocalMedia(incomingCall.type);
-      const pc = createPeerConnection(incomingCall.type, incomingCall.callerId);
-      peerConnectionRef.current = pc;
-      if (pendingOfferRef.current) {
-        const offerDesc = new RTCSessionDescription(
-          JSON.parse(pendingOfferRef.current)
+      try {
+        console.log("Accepting call from:", incomingCall.callerId);
+
+        setCallInProgress({
+          userId: incomingCall.callerId,
+          type: incomingCall.type,
+        });
+        setCallModal(incomingCall.type);
+        setCallStatus("Connecting...");
+        setCallStep("connecting");
+        setIncomingCall(null);
+
+        // Start local media
+        await startLocalMedia(incomingCall.type);
+
+        // Create peer connection
+        const pc = createPeerConnection(
+          incomingCall.type,
+          incomingCall.callerId
         );
-        await pc.setRemoteDescription(offerDesc);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        sendAnswer(incomingCall.callerId, JSON.stringify(answer));
-        setCallStatus("Connected");
-        setCallStep("connected");
+        peerConnectionRef.current = pc;
+
+        if (pendingOfferRef.current) {
+          const offerDesc = new RTCSessionDescription(
+            JSON.parse(pendingOfferRef.current)
+          );
+          await pc.setRemoteDescription(offerDesc);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          sendAnswer(incomingCall.callerId, JSON.stringify(answer));
+          setCallStatus("Connected");
+          setCallStep("connected");
+        }
+      } catch (error) {
+        console.error("Error accepting call:", error);
+        alert("Failed to accept call: " + error);
       }
     }
   };
@@ -715,9 +811,15 @@ export default function MessagesPage() {
                     ref={localAudioRef}
                     autoPlay
                     muted
+                    playsInline
                     className="hidden"
                   />
-                  <audio ref={remoteAudioRef} autoPlay className="hidden" />
+                  <audio
+                    ref={remoteAudioRef}
+                    autoPlay
+                    playsInline
+                    className="hidden"
+                  />
                 </div>
               )}
               {callStep === "calling" && (
