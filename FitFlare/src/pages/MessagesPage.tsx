@@ -431,7 +431,7 @@ export default function MessagesPage() {
         setCallInProgress(null);
         setCallModal(null);
         setIncomingCall(null);
-        const t = setTimeout(() => setCallStatus(""), 2000);
+        const t = window.setTimeout(() => setCallStatus(""), 2000);
         setStatusTimeout(t);
       },
     };
@@ -580,7 +580,7 @@ export default function MessagesPage() {
       setCallStep("ended");
       setIncomingCall(null);
       // Hide status after 2s
-      const t = setTimeout(() => setCallStatus(""), 2000);
+      const t = window.setTimeout(() => setCallStatus(""), 2000);
       setStatusTimeout(t);
     }
   };
@@ -594,7 +594,7 @@ export default function MessagesPage() {
       setCallInProgress(null);
       setCallModal(null);
       // Hide status after 2s
-      const t = setTimeout(() => setCallStatus(""), 2000);
+      const t = window.setTimeout(() => setCallStatus(""), 2000);
       setStatusTimeout(t);
     }
   };
