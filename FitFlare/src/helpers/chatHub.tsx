@@ -2,21 +2,21 @@ import * as signalR from "@microsoft/signalr";
 
 let connection: signalR.HubConnection | null = null;
 
-interface HubMessage  {
+interface HubMessage {
   senderId: string;
   content: string;
   timestamp: Date;
 }
 
 interface ChatHubCallbacks {
-  onReceiveMessage: (message: HubMessage ) => void;
+  onReceiveMessage: (message: HubMessage) => void;
   onUserConnected: (userId: string) => void;
   onUserDisconnected: (userId: string) => void;
 }
 
 export const startConnection = (token: string, callbacks: ChatHubCallbacks) => {
   connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${import.meta.env.VITE_API_WS}/chat`, {
+    .withUrl(`${import.meta.env.VITE_API_URL}/hubs/chat`, {
       accessTokenFactory: () => token,
     })
     .withAutomaticReconnect()
